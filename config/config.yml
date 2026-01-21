@@ -1,14 +1,13 @@
 
 input_files:
-  metadata: ".2025-10-01/metadata.tsv"
-  reference_fasta: ".2025-10-01/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta" # Optional: Assert not GZIPPED
-  multiqc_config: ".2025-10-01/multiqc_config.yaml" # REQUIRED
-  tss_reference_bed: ".2025-10-01/ENCFF493CCB.bed" # THIS WILL BE DEPRECATED AND INDSTEAD A USER-DEFINED GENOCDE FILE WILL BE USED TO PRODUCE THE TSS FILE (use oxbow 🤔) 
-  blacklist: ".2025-10-01/hg38.blacklist.bed"
-  chrombpnet_config_json: ".2025-10-01/fold_0.json"
+  metadata: "jobs/2025-12-18/metadata.tsv"
+  tss_reference_bed: "jobs/2025-12-18/ENCFF493CCB.bed" # TSS Reference
+  blacklist: "jobs/2025-12-18/hg38.blacklist.bed"
+  chrombpnet_config_json: "jobs/2025-12-18/fold_0.json"
+  chrombpnet_bias_model: "jobs/2025-12-18/ENCSR868FGK_bias_fold_0.h5"
 
 genomes:
-  GRCH38: ".2025-10-01/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+  GRCH38: "jobs/2025-12-18/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
 
 qvals:
   - 0.05 # The first qvalue will be used for multiQC
@@ -16,7 +15,8 @@ qvals:
 
 # i32 (1..16) or -1 (all)
 # Default is 1 (report the best alignment)
-k: 1
+k: 4
+samtools_exclude_flag: 1804
 bias_threshold_factor: 0.5
 
 results_dir: "results" # RELATIVE PATH
@@ -24,5 +24,7 @@ workdir: "/zata/zippy/ramirezc/atac-smk" # ABSOLUTE PATH
 tmpdir: "/tmp" # ABSOLUTE PATH
 picard_tmpdir: ".picard" # RELATIVE PATH
 logdir: "logs" # RELATIVE PATH
-container: "docker://clarity001/atac-smk:latest"
+# container: "docker://clarity001/atac-smk:latest"
+container: "docker://clarity001/atac-smk:opt"
+chrombpnet_container: "docker://clarity001/chrombpnet:latest"
 conda_env: "envs/idr.yaml"

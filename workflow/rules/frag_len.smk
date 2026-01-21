@@ -1,10 +1,10 @@
 rule frag_len:
     input:
-        bam = f"{RESULTS_DIR}/picard/{{sample}}-{{genome}}.bam"
+        bam = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.bam"
     output: 
         png = f"{RESULTS_DIR}/frag_len/{{sample}}-{{genome}}.png", 
         metrics = f"{RESULTS_DIR}/frag_len/{{sample}}-{{genome}}.txt"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: 
         f"{config['logdir']}/frag_len/{{sample}}-{{genome}}.log"
     shell:

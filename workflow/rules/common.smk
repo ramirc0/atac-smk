@@ -1,10 +1,14 @@
 import polars as pl
+import os
+import glob
+import sys
 
 metadata = pl.read_csv(config['input_files']["metadata"], separator="\t")
 
 GENOMES = list(config['genomes'].keys())
 SAMPLES = metadata["Sample"].to_list()
 QVALS = config['qvals']
+MIN_QVAL = min(QVALS)
 LOGDIR = config['logdir']
 read1 = metadata["R1"].to_list()
 FIRST_SAMPLE = read1[0]

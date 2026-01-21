@@ -8,7 +8,7 @@ rule fastp:
         sample=lambda wildcards: wildcards.sample,
         r1=lambda wildcards: READ_LOOKUP[wildcards.sample][0],
         r2=lambda wildcards: READ_LOOKUP[wildcards.sample][1],
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: f"{config['logdir']}/fastp/{{sample}}.log"
     shell:
         """

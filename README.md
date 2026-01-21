@@ -6,15 +6,17 @@ This repository contains a modular Snakemake pipeline for processing ATAC-seq da
 
 ## 📋 Table of Contents
 
-1. [Features](#features)
-2. [Prerequisites](#prerequisites)
-3. [Installation](#installation)
-4. [Configuration (`config.yaml`)](#configuration-configyaml)
-5. [Usage](#usage)
-6. [Pipeline Steps](#pipeline-steps)
-7. [Directory Structure](#directory-structure)
-8. [Contributing](#contributing)
-9. [License](#license)
+- [MOHD ATAC-seq Snakemake Pipeline](#mohd-atac-seq-snakemake-pipeline)
+  - [📋 Table of Contents](#-table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Configuration (`config.yaml`)](#configuration-configyaml)
+  - [Usage](#usage)
+  - [Pipeline Steps](#pipeline-steps)
+  - [Directory Structure](#directory-structure)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Notes](#notes)
 
 ---
 
@@ -142,6 +144,10 @@ Feel free to open issues or pull requests. For substantial changes, please discu
 
 This project is released under the MIT License. See [LICENSE](LICENSE) for details.
 
-## Test
+## Notes
 
-This is a test
+`hg38.blacklist.slop1057.bed` is a modified version of the [ENCODE DAC Exclusion List Regions](https://www.encodeproject.org/files/ENCFF356LFX/). The chrombpnet documentation recommends using a run the file through bedtools slop.
+
+```bash
+bedtools slop -i hg38.blacklist.bed -g hg38.chrom.sizes -b 1057 > hg38.blacklist.slop1057.bed
+```

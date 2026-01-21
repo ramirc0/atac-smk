@@ -1,4 +1,4 @@
-name: MOHD-ATAC
+name: idr
 channels:
   - bioconda
   - conda-forge

@@ -17,7 +17,7 @@ rule bowtie2_build:
         chromsizes_bed = f"{RESULTS_DIR}/bowtie2_build/{{genome}}/{{genome}}.chromsizes.bed",
         index_dir = directory(f"{RESULTS_DIR}/bowtie2_build/{{genome}}"),
         signal = f"{RESULTS_DIR}/bowtie2_build/{{genome}}/.continue"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: f"{config['logdir']}/bowtie2_build/{{genome}}.log"
     shell:
         """

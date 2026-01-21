@@ -6,7 +6,7 @@ rule macs3_signal:
     output:
         bedgraph = f"{RESULTS_DIR}/macs3_signal/{{sample}}-{{genome}}_treat_pileup.bdg",
         control_lambda = f"{RESULTS_DIR}/macs3_signal/{{sample}}-{{genome}}_control_lambda.bdg",
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: 
         f"{config['logdir']}/macs3_signal/{{sample}}-{{genome}}.log"
     params:
@@ -26,7 +26,7 @@ rule macs3_fold_change_signal:
         fc_bedgraph = temp(f"{RESULTS_DIR}/macs3_fold_change_signal/{{sample}}-{{genome}}_FE.bdg"),
         fc_bedgraph_sorted = f"{RESULTS_DIR}/macs3_fold_change_signal/{{sample}}-{{genome}}_FE_sorted.bdg",
         fc_signal = f"{RESULTS_DIR}/macs3_fold_change_signal/{{sample}}-{{genome}}_FE.bw"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: f"{config['logdir']}/macs3_fold_change_signal/{{sample}}-{{genome}}.log"
     params:
         output_prefix = f"{RESULTS_DIR}/macs3_fold_change_signal/{{sample}}-{{genome}}",
@@ -44,7 +44,7 @@ rule macs3_fold_change_signal:
             LC_COLLATE=C sort -k1,1 -k2,2n -S ${{MEM_MB}}M | \
             awk 'BEGIN{{OFS="\t"}}{{if (NR==1 || NR>1 && (prev_chr!=$1 || prev_chr==$1 && prev_chr_e<=$2)) {{print $0}}; prev_chr=$1; prev_chr_e=$3;}}' > {output.fc_bedgraph_sorted}
 
-        bigtools bedgraphtobigwig --nthreads {resources.threads} {output.fc_bedgraph_sorted} {input.chromsizes} {output.fc_signal}
+        bedGraphToBigWig {output.fc_bedgraph_sorted} {input.chromsizes} {output.fc_signal}
         """
 
 rule macs3_pvalue_signal:
@@ -57,7 +57,7 @@ rule macs3_pvalue_signal:
         pvalue_bedgraph = temp(f"{RESULTS_DIR}/macs3_pvalue_signal/{{sample}}-{{genome}}_ppois.bdg"),
         pvalue_bedgraph_sorted = f"{RESULTS_DIR}/macs3_pvalue_signal/{{sample}}-{{genome}}_ppois_sorted.bdg",
         pvalue_signal = f"{RESULTS_DIR}/macs3_pvalue_signal/{{sample}}-{{genome}}_ppois.bw"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: f"{config['logdir']}/macs3_pvalue_signal/{{sample}}-{{genome}}.log"
     params:
         output_prefix = f"{RESULTS_DIR}/macs3_pvalue_signal/{{sample}}-{{genome}}",
@@ -77,6 +77,6 @@ rule macs3_pvalue_signal:
             LC_COLLATE=C sort -k1,1 -k2,2n -S ${{MEM_MB}}M | \
             awk 'BEGIN{{OFS="\t"}}{{if (NR==1 || NR>1 && (prev_chr!=$1 || prev_chr==$1 && prev_chr_e<=$2)) {{print $0}}; prev_chr=$1; prev_chr_e=$3;}}' > {output.pvalue_bedgraph_sorted}
 
-        bigtools bedgraphtobigwig --nthreads {resources.threads} {output.pvalue_bedgraph_sorted} {input.chromsizes} {output.pvalue_signal}
+        bedGraphToBigWig {output.pvalue_bedgraph_sorted} {input.chromsizes} {output.pvalue_signal}
         """
 

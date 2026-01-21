@@ -3,7 +3,7 @@ rule macs3_callpeak:
         tagalign = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.tagalign.gz"
     output:
         narrowpeak = f"{RESULTS_DIR}/macs3_callpeak/{{q}}/{{sample}}.{{genome}}_peaks.narrowPeak"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: 
         f"{config['logdir']}/macs3_callpeak/{{q}}/{{sample}}.{{genome}}.log"
     shell:

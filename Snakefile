@@ -1,18 +1,11 @@
-import os
-import glob
-import sys
-
 configfile: "config/config.yml"
 workdir: config["workdir"]
-
-os.makedirs(config.get("picard_tmpdir", ".picard"), exist_ok=True)
 
 include: "workflow/rules/common.smk"
 include: "workflow/rules/fastp.smk"
 include: "workflow/rules/bowtie2_build.smk"
 include: "workflow/rules/bowtie2_align.smk"
 include: "workflow/rules/filter.smk"
-include: "workflow/rules/picard.smk"
 include: "workflow/rules/bam_to_tagalign.smk"
 include: "workflow/rules/macs3_signal.smk"
 include: "workflow/rules/bedgraphtobigwig.smk"
@@ -21,14 +14,10 @@ include: "workflow/rules/frag_len.smk"
 include: "workflow/rules/tss_enrichment.smk"
 include: "workflow/rules/frip_all.smk"
 include: "workflow/rules/pseudoreplicated_peaks.smk"
-include: "workflow/rules/multiqc.smk"
-include: "workflow/rules/chrombpnet.smk"
-
-# wildcard_constraints:
-#     q="^(?:0*(?:\.\d+)?|1(\.0*)?)$"
-
-onerror:
-    shell("rm -r results/chrombpnet")
+# include: "workflow/rules/multiqc.smk"
+# include: "workflow/rules/chrombpnet.0.smk"
+# include: "workflow/rules/chrombpnet.1.smk"
+# include: "workflow/rules/chrombpnet.2.smk"
 
 rule all:
     input:
@@ -53,6 +42,12 @@ rule all:
             sample=SAMPLES,
             genome=GENOMES 
         ),
+        # PBC QC
+        expand(
+            f"{RESULTS_DIR}/pbc_qc/{{sample}}-{{genome}}.pbc.json",
+            sample=SAMPLES,
+            genome=GENOMES,
+        ),
 
         # Filtering
         expand(
@@ -61,13 +56,6 @@ rule all:
             genome=GENOMES,
         ),
 
-        # MarkDuplicates
-        expand(
-            f"{RESULTS_DIR}/picard/{{sample}}-{{genome}}.bam",
-            sample=SAMPLES,
-            genome=GENOMES,
-        ),
-        
         # BEDPE & tagAlign
         expand(
             f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.bedpe",
@@ -170,17 +158,28 @@ rule all:
             sample=SAMPLES,
             genome=GENOMES
         ),
-        expand(
-            [
-                f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_bias.continue",
-                f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_prep_nonpeaks.continue"
-            ],
-            sample=SAMPLES,
-            genome=GENOMES
-        ),
+        # expand(
+        #     [
+        #         f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_prep_nonpeaks.continue",
+        #         f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_bias.continue",
+        #         f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_full.continue"
+        #     ],
+        #     sample=SAMPLES,
+        #     genome=GENOMES
+        # ),
+        # f"{RESULTS_DIR}/chrombpnet/best_bias_model.h5",
+        # f"{RESULTS_DIR}/chrombpnet/best_bias_metrics.json",
+        # expand(
+        #     [
+        #         f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_prep_nonpeaks.continue",
+        #         f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_full.continue"
+        #     ],
+        #     sample=SAMPLES,
+        #     genome=GENOMES
+        # ),
 
-        # MultQC
-        "results/multiqc/multiqc_report.html"
+        # # MultQC
+        # "results/multiqc/multiqc_report.html"
 
     
 

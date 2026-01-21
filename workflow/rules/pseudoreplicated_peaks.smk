@@ -1,3 +1,5 @@
+# "Ideally we want Q = 0.05 for just the vanilla peak calls, and P = 0.01 for the pseudorep analysis"
+
 rule pseudoreps:
     input: 
         bedpe = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.bedpe"
@@ -21,7 +23,7 @@ rule macs3_pseudoreps:
     shell:
         """
         exec >> {log} 2>&1
-        macs3 callpeak -f BED -t {input} -n {wildcards.sample}-{wildcards.genome}-{wildcards.pseudorep} --outdir results/macs3_pseudoreps/ --nomodel --shift -75 --keep-dup all --extsize 150 -g hs -q .01 -B
+        macs3 callpeak -f BED -t {input} -n {wildcards.sample}-{wildcards.genome}-{wildcards.pseudorep} --outdir results/macs3_pseudoreps/ --nomodel --shift -75 --keep-dup all --extsize 150 -g hs --pvalue 0.01 -B
         """
 
 rule idr:
@@ -59,8 +61,6 @@ rule overlap_peaks:
         exec >> {log} 2>&1
         bedtools intersect -a {input.narrowpeak[0]} -b {input.narrowpeak[1]} -u | sort -k1,1 -k2,2n > {output.overlap_peaks}
         """
-
-# These are generated from 3 peaks calls, all fragments (p=<defined in configfile), subset 1 (p=0.01), and subset 2 (p=0.01). Peaks from the all fragments are retained if they overlap peaks in both subset 1 and subset 2 by at least 50%.
 
 rule overlap_peaks_jill: 
     input: 

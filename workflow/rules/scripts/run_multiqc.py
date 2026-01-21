@@ -60,7 +60,7 @@ def generate_flagstat_yaml(outdir: str, custom_data_filename: str):
 def generate_fastp_yaml(outdir: str, custom_data_filename: str):
     """Generate MultiQC custom content YAML"""
     
-    fastp_dir = f"{outdir}/processed"
+    fastp_dir = f"{outdir}/fastp"
     multiqc_dir = f"{outdir}/multiqc"
     
     data = defaultdict(dict)
@@ -75,7 +75,7 @@ def generate_fastp_yaml(outdir: str, custom_data_filename: str):
         "description": "Additional fastp fields included by the user",
         "plot_type": "generalstats",
         "headers": {
-            "reads_before_fastp": {
+            "reads_before_filtering": {
                 "title": "Reads Before Filtering",
                 "description": "Total reads before filtering (millions)",
                 "format": "{:.1f} M",
@@ -97,7 +97,7 @@ def generate_file_list(macs3_qvalue: float, outdir:str, file_list_filename: str)
             f'results/macs3_callpeak/{macs3_qvalue}': '*.xls',
             'results/bowtie2_align': "*.flagstat",
             'results/picard': "*.txt",
-            'results/processed': "*.json",
+            'results/fastp': "*.json",
             'results/multiqc': "*_mqc.yaml"
         }
         for dir, pattern in analysis_dir.items():

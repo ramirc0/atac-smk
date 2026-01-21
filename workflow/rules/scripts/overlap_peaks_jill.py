@@ -3,53 +3,60 @@ import bioframe as bf
 import argparse
 from pathlib import Path
 
-def filter_50percent_overlap(overlaps_df):
-    if overlaps_df.empty:
-        return overlaps_df
+def filter_50percent_overlap(df1, df2):
+    """Find rows in df1 that overlap with df2 by at least 50%"""
+    if df1.empty or df2.empty:
+        return df1.iloc[:0]
     
-    overlaps_df['len1'] = overlaps_df['end'] - overlaps_df['start']
-    overlaps_df['len2'] = overlaps_df['end_'] - overlaps_df['start_']
-    overlaps_df['overlap_len'] = overlaps_df['overlap_end'] - overlaps_df['overlap_start']
-    overlaps_df['frac1'] = overlaps_df['overlap_len'] / overlaps_df['len1']
-    overlaps_df['frac2'] = overlaps_df['overlap_len'] / overlaps_df['len2']
+    overlaps = bf.overlap(df1, df2, return_overlap=True, how='inner')
     
-    mask = (overlaps_df['frac1'] >= 0.5) | (overlaps_df['frac2'] >= 0.5)
-    return overlaps_df[mask]
+    if overlaps.empty:
+        return df1.iloc[:0]
+    
+    # Calculate overlap fractions
+    overlaps['len1'] = overlaps['end'] - overlaps['start']
+    overlaps['len2'] = overlaps['end_'] - overlaps['start_']
+    overlaps['overlap_len'] = overlaps['overlap_end'] - overlaps['overlap_start']
+    overlaps['frac1'] = overlaps['overlap_len'] / overlaps['len1']
+    overlaps['frac2'] = overlaps['overlap_len'] / overlaps['len2']
+    
+    # Filter for 50% overlap
+    mask = (overlaps['frac1'] >= 0.5) | (overlaps['frac2'] >= 0.5)
+    filtered = overlaps[mask]
+    
+    # Return the original rows from df1 that passed the filter
+    passing_rows = filtered[['chrom', 'start', 'end', 'name', 'score', 'strand', 
+                             'signalValue', 'pValue', 'qValue', 'peak']].drop_duplicates()
+    
+    return passing_rows
 
 def main(args):
     all_fragments = args.all_fragments
     subset1 = args.subset1
     subset2 = args.subset2
     output = args.output
-
+    
     peak_cols = ['chrom', 'start', 'end', 'name', 'score', 'strand', 
                  'signalValue', 'pValue', 'qValue', 'peak']
-
+    
     all_fragments = pd.read_csv(all_fragments, sep='\t', names=peak_cols, header=None)
     subset1 = pd.read_csv(subset1, sep='\t', names=peak_cols, header=None)
     subset2 = pd.read_csv(subset2, sep='\t', names=peak_cols, header=None)
     
-    overlaps1 = bf.overlap(all_fragments, subset1, return_overlap=True, how='inner')
-    filtered_overlaps1 = filter_50percent_overlap(overlaps1)
-
-    if not filtered_overlaps1.empty:
-        passed_peaks = all_fragments.iloc[filtered_overlaps1.index.get_level_values(0).unique()]
-    else:
-        raise ValueError("No peaks that overlap subset 1 by ≥50%")
-
-    overlaps2 = bf.overlap(passed_peaks.reset_index(drop=True), subset2, return_overlap=True, how='inner')
-    filtered_overlaps2 = filter_50percent_overlap(overlaps2)
+    # Find peaks that overlap subset1 by ≥50%
+    passed_peaks = filter_50percent_overlap(all_fragments, subset1)
     
-    if not filtered_overlaps2.empty:
-        final_peaks = passed_peaks.reset_index(drop=True).iloc[
-            filtered_overlaps2.index.get_level_values(0).unique()
-        ]
-    else:
+    if passed_peaks.empty:
+        raise ValueError("No peaks that overlap subset 1 by ≥50%")
+    
+    # Find peaks that also overlap subset2 by ≥50%
+    final_peaks = filter_50percent_overlap(passed_peaks, subset2)
+    
+    if final_peaks.empty:
         raise ValueError("No peaks that overlap both subsets by ≥50%")
-   
+    
     final_peaks = final_peaks.drop_duplicates().sort_values(['chrom', 'start'])
     final_peaks.to_csv(output, sep='\t', header=False, index=False)
-
     print(f"Found {len(final_peaks)} peaks that overlap both subsets by ≥50%")
 
 if __name__ == "__main__":

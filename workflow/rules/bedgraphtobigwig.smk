@@ -5,7 +5,7 @@ rule bedgraphtobigwig:
         chromsizes_bed = f"{RESULTS_DIR}/bowtie2_build/{{genome}}/{{genome}}.chromsizes.bed",
     output:
         bigwig = f"{RESULTS_DIR}/macs3_signal/{{sample}}-{{genome}}.bigWig"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log:
         f"{config['logdir']}/bedgraphtobigwig/{{sample}}-{{genome}}.log"
     params:
@@ -17,7 +17,5 @@ rule bedgraphtobigwig:
         bedtools intersect -a {input.bedgraph} -b {input.chromsizes_bed} -sorted > {RESULTS_DIR}/macs3_signal/{params.prefix}.bg
 
         echo "Running bigtools bedgraphtobigwig"
-        bigtools bedgraphtobigwig {RESULTS_DIR}/macs3_signal/{params.prefix}.bg {input.chromsizes} {output.bigwig} --inmemory --nthreads {resources.threads}
+        bedGraphToBigWig {RESULTS_DIR}/macs3_signal/{params.prefix}.bg {input.chromsizes} {output.bigwig}
         """
-
-

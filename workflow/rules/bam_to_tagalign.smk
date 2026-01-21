@@ -1,10 +1,10 @@
 rule bam_to_tagalign:
     input: 
-        bam = f"{RESULTS_DIR}/picard/{{sample}}-{{genome}}.bam"
+        bam = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.bam"
     output: 
         bedpe = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.bedpe",
         tagalign = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.tagalign.gz"
-    container: "docker://clarity001/atac-smk:latest"
+    container: config["container"]
     log: 
         f"{config['logdir']}/bedpe_tagalign/{{sample}}-{{genome}}.log"
     params:

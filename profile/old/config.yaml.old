@@ -1,0 +1,189 @@
+executor: slurm
+jobs: 50
+
+resources:
+  chrombpnet_jobs: 28
+
+set-resources:
+  fastp:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 8
+    cpus_per_task: 8
+    mem_mb: 32000
+  bowtie2_build:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  bowtie2_align:
+    runtime: 720
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 12hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  pbc_qc:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 16
+    cpus_per_task: 16
+    mem_mb: 96000
+  filter:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  picard:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 8
+    cpus_per_task: 8
+    mem_mb: 64000
+  bam_to_tagalign:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  macs3_callpeak:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  macs3_signal:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  bedgraphtobigwig:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  frag_len:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  frip_all:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 22
+    cpus_per_task: 22
+    mem_mb: 64000
+  tss_enrichment:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  pseudoreps:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  macs3_pseudoreps:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  idr:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  overlap_peaks:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  overlap_peaks_jill:
+    runtime: 240
+    slurm_extra: "--cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  macs3_fold_change_signal:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  macs3_pvalue_signal:
+    runtime: 240
+    slurm_extra: "--constraint=cascadelake --cpu-freq=High-High:Performance"
+    slurm_partition: 4hours
+    threads: 4
+    cpus_per_task: 4
+    mem_mb: 64000
+  # chrombpnet_prep_nonpeaks:
+  #   slurm_partition: "gpu,gpuh200"
+  #   chrombpnet_jobs: 1
+  #   runtime: 1440
+  #   mem_mb: 86000
+  #   cpus_per_task: 8
+  #   slurm_extra: "--gres=gpu:1"
+  #   apptainer-args: -B /zata,/data --nv
+  # chrombpnet_bias:
+  #   slurm_partition: "gpu,gpuh200"
+  #   chrombpnet_jobs: 1
+  #   runtime: 1440
+  #   mem_mb: 86000
+  #   cpus_per_task: 8
+  #   slurm_extra: "--gres=gpu:1"
+  #   apptainer-args: -B /zata,/data --nv
+  # choose_best_bias_model:
+  #   slurm_partition: "30mins"
+  #   runtime: 30
+  #   mem_mb: 16000
+  #   cpus_per_task: 2
+  #   apptainer-args: -B /zata,/data
+  # chrombpnet_full:
+  #   slurm_partition: "gpu,gpuh200"
+  #   chrombpnet_jobs: 1
+  #   runtime: 1440
+  #   mem_mb: 86000
+  #   cpus_per_task: 8
+  #   slurm_extra: "--gres=gpu:1"
+  #   apptainer-args: -B /zata,/data --nv
+
+use-apptainer: True
+use-conda: True
+apptainer-prefix: workflow/rules/envs
+conda-prefix: workflow/rules/envs
+apptainer-args: -B /zata,/data --nv
+
+max-jobs-per-timespan: 2/1s
+# retries: 1
+rerun-incomplete: True
+printshellcmds: True
+# keep-incomplete: True
