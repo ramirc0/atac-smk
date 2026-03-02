@@ -16,7 +16,6 @@ params:
   # bias_threshold_factor: 0.5
 
 input:
-  slack_webhook_url: "https://hooks.slack.com/services/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"
   sample_map: "MOHD.sample_map.tsv"
   tmp_dir: ".tmp"
 

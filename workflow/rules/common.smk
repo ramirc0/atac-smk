@@ -1,9 +1,12 @@
 from pathlib import Path
+fromt dotenv import load_dotenv
 import polars as pl
 import math
 import glob
 import sys
 import os
+
+load_dotenv()
 
 Path(config["input"]["tmp_dir"]).mkdir(parents=True, exist_ok=True)
 sample_map_df = pl.read_csv(config["input"]["sample_map"], separator="\t", comment_prefix="#")

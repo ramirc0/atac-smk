@@ -1,14 +1,5 @@
 configfile: "config/config.yml"
 
-if config["input"].get("slack_webhook_url"):
-  URL=config["input"]["slack_webhook_url"]
-  onstart:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Started 🚀\"}}' {URL}")
-  onsuccess:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished Successfully! ✅\"}}' {URL}")
-  onerror:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished With Errors! ❌\"}}' {URL}")
-
 include: "rules/common.smk"
 include: "rules/fastp.smk"
 include: "rules/bowtie2_build.smk"
@@ -51,6 +42,16 @@ localrules:
   idr,
   overlap_peaks,
   overlap_peaks_abc,
+
+SLACK_WEBHOOK_URL=os.environ.get("SLACK_WEBHOOK_URL")
+print(f"SLACK_WEBHOOK_URL: {SLACK_WEBHOOK_URL}")
+if SLACK_WEBHOOK_URL:
+  onstart:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Started 🚀\"}}' {SLACK_WEBHOOK_URL}")
+  onsuccess:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished Successfully! ✅\"}}' {SLACK_WEBHOOK_URL}")
+  onerror:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished With Errors! ❌\"}}' {SLACK_WEBHOOK_URL}")
 
 # # WIP
 # include: "workflow/rules/chrombpnet.0.smk"
