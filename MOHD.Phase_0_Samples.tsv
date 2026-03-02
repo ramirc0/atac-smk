@@ -1,0 +1,79 @@
+entity:dataset_id	data_modality	description	entity_id	entity_type
+MOHD_EA100001	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CCH_0001_BC_01	sample
+MOHD_EA100002	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CCH_0002_BC_01	sample
+MOHD_EA100003	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CCH_0003_BC_01	sample
+MOHD_EA100004	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0001_BC_01	sample
+MOHD_EA100005	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0001_PC_01	sample
+MOHD_EA100006	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0001_PO_01	sample
+MOHD_EA100007	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0002_BC_01	sample
+MOHD_EA100008	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0002_PC_01	sample
+MOHD_EA100009	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0002_PO_01	sample
+MOHD_EA100010	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0003_BC_01	sample
+MOHD_EA100011	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0003_PC_01	sample
+MOHD_EA100012	ATAC-seq	assay for transposase-accessible chromatin using sequencing	CKD_0003_PO_01	sample
+MOHD_EA100013	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0001_BC_01	sample
+MOHD_EA100014	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0001_PO_01	sample
+MOHD_EA100016	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0002_BC_01	sample
+MOHD_EA100017	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0002_PO_01	sample
+MOHD_EA100018	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0003_BC_01	sample
+MOHD_EA100019	ATAC-seq	assay for transposase-accessible chromatin using sequencing	EXP_0003_PO_01	sample
+MOHD_EA100020	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0001_BC_01	sample
+MOHD_EA100021	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0001_PC_01	sample
+MOHD_EA100022	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0001_PO_01	sample
+MOHD_EA100023	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0002_BC_01	sample
+MOHD_EA100024	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0002_PC_01	sample
+MOHD_EA100025	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0002_PO_01	sample
+MOHD_EA100026	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0003_BC_01	sample
+MOHD_EA100027	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0003_PC_01	sample
+MOHD_EA100028	ATAC-seq	assay for transposase-accessible chromatin using sequencing	MOM_0003_PO_01	sample
+MOHD_EA100029	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0004_BC_01	sample
+MOHD_EA100030	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0004_PO_01	sample
+MOHD_EA100031	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0005_BC_01	sample
+MOHD_EA100032	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0005_PO_01	sample
+MOHD_EA100033	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0006_BC_01	sample
+MOHD_EA100034	ATAC-seq	assay for transposase-accessible chromatin using sequencing	UIC_0006_PO_01	sample
+MOHD_EB100001	WGBS	whole genome bisulfite sequencing	CCH_0001_WB_01	sample
+MOHD_EB100002	WGBS	whole genome bisulfite sequencing	CCH_0002_WB_01	sample
+MOHD_EB100003	WGBS	whole genome bisulfite sequencing	CCH_0003_WB_01	sample
+MOHD_EB100004	WGBS	whole genome bisulfite sequencing	CKD_0001_WB_01	sample
+MOHD_EB100005	WGBS	whole genome bisulfite sequencing	CKD_0002_WB_01	sample
+MOHD_EB100006	WGBS	whole genome bisulfite sequencing	CKD_0003_WB_01	sample
+MOHD_EB100007	WGBS	whole genome bisulfite sequencing	EXP_0001_WB_01	sample
+MOHD_EB100008	WGBS	whole genome bisulfite sequencing	EXP_0002_WB_01	sample
+MOHD_EB100009	WGBS	whole genome bisulfite sequencing	EXP_0003_WB_01	sample
+MOHD_EB100010	WGBS	whole genome bisulfite sequencing	MOM_0001_WB_01	sample
+MOHD_EB100011	WGBS	whole genome bisulfite sequencing	MOM_0002_WB_01	sample
+MOHD_EB100012	WGBS	whole genome bisulfite sequencing	MOM_0003_WB_01	sample
+MOHD_EB100013	WGBS	whole genome bisulfite sequencing	UIC_0004_WB_01	sample
+MOHD_EB100014	WGBS	whole genome bisulfite sequencing	UIC_0005_WB_01	sample
+MOHD_EB100015	WGBS	whole genome bisulfite sequencing	UIC_0006_WB_01	sample
+MOHD_EG100001	WGS	whole genome sequencing	CCH_0001_WB_01	sample
+MOHD_EG100002	WGS	whole genome sequencing	CCH_0002_WB_01	sample
+MOHD_EG100003	WGS	whole genome sequencing	CCH_0003_WB_01	sample
+MOHD_EG100004	WGS	whole genome sequencing	CKD_0001_WB_01	sample
+MOHD_EG100005	WGS	whole genome sequencing	CKD_0002_WB_01	sample
+MOHD_EG100006	WGS	whole genome sequencing	CKD_0003_WB_01	sample
+MOHD_EG100007	WGS	whole genome sequencing	EXP_0001_WB_01	sample
+MOHD_EG100008	WGS	whole genome sequencing	EXP_0002_WB_01	sample
+MOHD_EG100009	WGS	whole genome sequencing	EXP_0003_WB_01	sample
+MOHD_EG100010	WGS	whole genome sequencing	MOM_0001_WB_01	sample
+MOHD_EG100011	WGS	whole genome sequencing	MOM_0002_WB_01	sample
+MOHD_EG100012	WGS	whole genome sequencing	MOM_0003_WB_01	sample
+MOHD_EG100013	WGS	whole genome sequencing	UIC_0004_WB_01	sample
+MOHD_EG100014	WGS	whole genome sequencing	UIC_0005_WB_01	sample
+MOHD_EG100015	WGS	whole genome sequencing	UIC_0006_WB_01	sample
+MOHD_ER100001	RNA-seq	bulk RNA-seq	CCH_0001_XR_01	sample
+MOHD_ER100002	RNA-seq	bulk RNA-seq	CCH_0002_XR_01	sample
+MOHD_ER100003	RNA-seq	bulk RNA-seq	CCH_0003_XR_01	sample
+MOHD_ER100004	RNA-seq	bulk RNA-seq	CKD_0001_XR_01	sample
+MOHD_ER100005	RNA-seq	bulk RNA-seq	CKD_0002_XR_01	sample
+MOHD_ER100006	RNA-seq	bulk RNA-seq	CKD_0003_XR_01	sample
+MOHD_ER100007	RNA-seq	bulk RNA-seq	EXP_0001_XR_01	sample
+MOHD_ER100008	RNA-seq	bulk RNA-seq	EXP_0002_XR_01	sample
+MOHD_ER100009	RNA-seq	bulk RNA-seq	EXP_0003_XR_01	sample
+MOHD_ER100010	RNA-seq	bulk RNA-seq	MOM_0001_XR_01	sample
+MOHD_ER100011	RNA-seq	bulk RNA-seq	MOM_0002_XR_01	sample
+MOHD_ER100012	RNA-seq	bulk RNA-seq	MOM_0003_XR_01	sample
+MOHD_ER100013	RNA-seq	bulk RNA-seq	UIC_0004_XR_01	sample
+MOHD_ER100014	RNA-seq	bulk RNA-seq	UIC_0005_XR_01	sample
+MOHD_ER100015	RNA-seq	bulk RNA-seq	UIC_0006_XR_01	sample

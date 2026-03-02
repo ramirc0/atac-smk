@@ -1,34 +1,54 @@
 import oxbow
+from pathlib import Path
 import polars as pl
 import json
 import argparse
 
-def main(args):
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("bam", type=Path)
+    parser.add_argument("pbc_json", type=Path)
+
+    args = parser.parse_args()
+
+    return args
+
+def main():
+    args = parse_args()
+
     bed_cols = ["chrom", "start", "end", "name", "score", "strand"]
     agg_cols = ["chrom", "start", "end", "strand"]
     
     bam_file = oxbow.from_bam(args.bam).to_polars(lazy=True)
-    bed_lf = bam_file.with_columns(
-        pl.col("rname").alias("chrom"),
-        pl.min_horizontal("pos", "pnext").alias("start"),
-        (pl.max_horizontal("pos", "pnext") + pl.col("tlen")).alias("end"),
-        pl.col("mapq").alias("score"),
-        pl.col("qname").alias("name"),
-        pl.when(pl.col("flag") & 16 == 0)
-        .then(pl.lit("+"))
-        .otherwise(pl.lit("-"))
-        .alias("strand")
-    ).select(bed_cols + ["flag"]).filter(
-        ~((pl.col("chrom") == "chrM") | (pl.col("chrom").cat.starts_with("chrUn"))), # Filter mitochondrial and reads mapped to contigs/scaffolds
-        ((pl.col("flag") & 1804 == 0) & (pl.col("flag") & 2 != 0)), # filtering for (same as filter.smk)
-        (pl.col("score") >= 30)
-    ).group_by("name").agg(
-        [pl.col(col).filter(pl.col("flag") & 64 == 0).first().alias(col) for col in agg_cols] + \
-        [pl.col(col).filter(pl.col("flag") & 128 == 0).first().alias(col + "_") for col in agg_cols] + \
-        [pl.col("score").first()]
-    ).select(
-        ["chrom", "start", "end", "chrom_", "start_", "end_", "name", "score", "strand", "strand_"]
-    ).sort("name")
+    assert isinstance(bam_file, pl.LazyFrame)
+    bed_lf = (
+        bam_file
+        .with_columns(
+            pl.col("rname").alias("chrom"),
+            pl.col("pos").alias("start"),
+            (pl.col("pos") + pl.col("seq").str.len_chars()).alias("end"),
+            pl.col("mapq").alias("score"),
+            pl.col("qname").alias("name"),
+            pl.when((pl.col("flag") & 16) == 0)
+            .then(pl.lit("+"))
+            .otherwise(pl.lit("-"))
+            .alias("strand")
+        )
+        .select(bed_cols + ["flag"]).filter(
+            ~((pl.col("chrom") == "chrM") | (pl.col("chrom").cat.starts_with("chrUn"))), # Filter mitochondrial and reads mapped to contigs/scaffolds
+            (((pl.col("flag") & 1804) == 0) & ((pl.col("flag") & 2) != 0)), # filtering for (same as filter.smk)
+            (pl.col("score") >= 30)
+        )
+        .group_by("name").agg(
+            [pl.col(col).filter((pl.col("flag") & 64) == 64).first().alias(col) for col in agg_cols] + \
+            [pl.col(col).filter((pl.col("flag") & 128) == 128).first().alias(col + "_") for col in agg_cols] + \
+            [pl.col("score").first()]
+        )
+        .select(
+            ["chrom", "start", "end", "chrom_", "start_", "end_", "name", "score", "strand", "strand_"]
+        )
+        .sort("name")
+    )
 
     bed_df = bed_lf.collect()
     uniq_counts = bed_df.with_columns(
@@ -62,11 +82,5 @@ def main(args):
     print("Wrote QC metrics to ", str(args.pbc_json))
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("bam")
-    parser.add_argument("pbc_json")
-
-    args = parser.parse_args()
-
-    main(args)
+    main()
     

@@ -1,9 +1,3 @@
-# def get_exclude_flag(wildcards):
-#     if int(config['k']) == -1 or int(config['k']) > 1:
-#         return("1548")
-#     else:
-#         return("1804")
-
 # | Bit | Value | Excludes |
 # |-----|-------|----------|
 # | 4 | 4 | Unmapped |
@@ -14,25 +8,27 @@
 
 rule filter:
     input: 
-        bam = f"{RESULTS_DIR}/bowtie2_align/{{sample}}-{{genome}}.bam"
+        bam="results/bowtie2_align/{sample}.bam",
+        signal=rules.bowtie2_align.output.signal,
     output: 
-        bam = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.bam",
-        flagstat_json = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.flagstat.json"
+        bam="results/filter/{sample}.bam",
+        flagstat_json="results/filter/{sample}.flagstat.json",
+        signal=touch("results/filter/{sample}.ok"),
     log: 
-        f"{config['logdir']}/filter/{{sample}}-{{genome}}.log"
+        "results/filter/{sample}.log"
     params:
-        exclude_flag = config['samtools_exclude_flag'],
-        prefix = lambda wildcards: "-".join(wildcards)
+        exclude_flag=config['params']['samtools_exclude_flag'],
+        include_flag=config['params']['samtools_include_flag'],
     shell:
         """
         exec >> {log} 2>&1
 
         sambamba markdup -t {resources.threads} {input.bam} /dev/stdout | \
-        samtools view -@ {resources.threads} -F 1804 -f 2 -q 30 -h -u /dev/stdin | \
+        samtools view -@ {resources.threads} -F {params.exclude_flag} -f {params.include_flag} -q 30 -h -u /dev/stdin | \
         samtools sort -m 1536M -@ {resources.threads} -n /dev/stdin | \
         mbuffer -m 1G | \
         samtools fixmate -@ {resources.threads} -r /dev/stdin /dev/stdout | \
-        samtools view -@ {resources.threads} -F 1804 -f 2 -h -u /dev/stdin | \
+        samtools view -@ {resources.threads} -F {params.exclude_flag} -f {params.include_flag} -h -u /dev/stdin | \
         samtools sort -m 1536M -@ {resources.threads} /dev/stdin | \
         mbuffer -m 1G | \
         samtools view -@ {resources.threads} -h | \
@@ -43,21 +39,3 @@ rule filter:
         samtools index -@ {resources.threads} {output.bam}
         samtools flagstat -@ {resources.threads} --output-fmt json {output.bam} > {output.flagstat_json}
         """
-
-    # shell:
-    #     """
-    #     exec >> {log} 2>&1
-    #     echo {params.prefix}
-    #     sambamba markdup -t {resources.threads} {input.bam} /dev/stdout | \
-    #     samtools view -@ {resources.threads} -F 1804 -f 2 -q 30 -h -u /dev/stdin | \
-    #     samtools sort -@ {resources.threads} -n /dev/stdin | \
-    #     samtools fixmate -@ {resources.threads} -r /dev/stdin /dev/stdout | \
-    #     samtools view -@ {resources.threads} -F 1804 -f 2 -h -u /dev/stdin | \
-    #     samtools sort -@ {resources.threads} /dev/stdin | \
-    #     samtools view -@ {resources.threads} -h | grep -v "chrM" | samtools view -@ {resources.threads} -b > {output.bam}
-
-    #     samtools quickcheck -v {output.bam}
-    #     samtools index -@ {resources.threads} {output.bam}
-    #     samtools flagstat -@ {resources.threads} --output-fmt json {output.bam} > {output.flagstat_json}
-    #     """
-

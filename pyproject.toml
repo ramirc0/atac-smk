@@ -20,5 +20,12 @@ dependencies = [
     "rich>=14.2.0",
     "tqdm>=4.67.1",
     "yte>=1.9.0",
-    "mohd_manifest_cli @ git+https://github.com/christian728504/mohd-manifest-cli.git",
+    "mohd_manifest_cli @ git+https://github.com/christian728504/mohd-manifest-cli.git@main",
+    "snakemake>=9.16.3",
+    "snakemake-executor-plugin-slurm>=2.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
 ]

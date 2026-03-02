@@ -1,22 +1,21 @@
+from pathlib import Path
 import polars as pl
-import os
+import math
 import glob
 import sys
+import os
 
-metadata = pl.read_csv(config['input_files']["metadata"], separator="\t")
-
-GENOMES = list(config['genomes'].keys())
-SAMPLES = metadata["Sample"].to_list()
-QVALS = config['qvals']
-MIN_QVAL = min(QVALS)
-LOGDIR = config['logdir']
-read1 = metadata["R1"].to_list()
+Path(config["input"]["tmp_dir"]).mkdir(parents=True, exist_ok=True)
+sample_map_df = pl.read_csv(config["input"]["sample_map"], separator="\t", comment_prefix="#")
+SAMPLES = sample_map_df["mohd_accession"].to_list()
+read1 = sample_map_df["r1"].to_list()
+read2 = sample_map_df["r2"].to_list()
 FIRST_SAMPLE = read1[0]
-read2 = metadata["R2"].to_list()
-
 READ_LOOKUP = dict(zip(SAMPLES, zip(read1, read2)))
 
-RESULTS_DIR = config['results_dir']
+def get_fastqs(wildcards):
+    r1, r2 = READ_LOOKUP[wildcards.sample]
+    return {"r1": r1, "r2": r2}
 
 ATTEMPT_MODIFIERS = {
     1: {"slurm_partition": "4hours", "runtime": 240, "mem_mb_multiplier": 1.0},
@@ -24,11 +23,14 @@ ATTEMPT_MODIFIERS = {
     3: {"slurm_partition": "5days", "runtime": 7200, "mem_mb_multiplier": 2.0},
 }
 
-def get_slurm_partition(wildcards, attempt):
-    return ATTEMPT_TO_QUEUE[attempt]["slurm_partition"]
+def get_rsources(wildcards, attempt, input):
+    attempt_modifiers = ATTEMPT_MODIFIERS[attempt]
+    mem = int(attempt_modifiers["mem_mb_multiplier"]) * input.resources.mem_mb
+    return {
+        "slurm_partition": attempt_modifiers["slurm_partition"],
+        "runtime": attempt_modifiers["runtime"],
+        "mem": f"{mem}MB",
+    }
 
-def get_runtime(wildcards, attempt):
-    return ATTEMPT_TO_QUEUE[attempt]["runtime"]
-
-def get_memory(wildcards, attempt, input):
-    return int(ATTEMPT_TO_QUEUE[attempt]["mem_mb_multiplier"] * input.size_mb)
+def get_macs3_pseudoreps_signal(wildcards):
+    return expand(rules.macs3_pseudoreps.output.signal, sample=[wildcards.sample],pseudorep=["pseudorep1","pseudorep2"])

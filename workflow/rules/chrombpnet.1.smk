@@ -36,7 +36,7 @@ rule chrombpnet_prep_nonpeaks:
         '''
 
 rule chrombpnet_full:
-    input: atac-smk
+    input:
         prep_nonpeaks_singal = f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/chrombpnet_prep_nonpeaks.continue",
         chromsizes = rules.bowtie2_build.output.chromsizes,
         negatives = f"{RESULTS_DIR}/chrombpnet/{{sample}}.{{genome}}/negatives.bed",

@@ -1,16 +1,17 @@
 rule bam_to_tagalign:
     input: 
-        bam = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.bam"
+        signal=rules.filter.output.signal,
+        bam=rules.filter.output.bam,
     output: 
-        bedpe = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.bedpe",
-        tagalign = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.tagalign.gz"
-    container: config["container"]
-    log: 
-        f"{config['logdir']}/bedpe_tagalign/{{sample}}-{{genome}}.log"
+        bedpe="results/bedpe_tagalign/{sample}.bedpe",
+        tagalign="results/bedpe_tagalign/{sample}.tagalign.gz",
+        signal=touch("results/bedpe_tagalign/{sample}.ok"),
     params:
-        prefix = lambda wildcards: "-".join(wildcards),
+      tagalign_prefix="results/bedpe_tagalign/{sample}.tagalign",
+    container: config["environments"]["custom"]
+    log: "logs/bedpe_tagalign/{sample}.log"
     shell:
         """
         exec >> {log} 2>&1
-        python ./workflow/rules/scripts/bam_to_tagalign.py {input.bam} {output.bedpe} {RESULTS_DIR}/bedpe_tagalign/{params.prefix}.tagalign --threads {resources.threads}
+        python workflow/rules/scripts/bam_to_tagalign.py {input.bam} {output.bedpe} {params.tagalign_prefix} --threads {resources.threads}
         """

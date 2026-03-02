@@ -1,0 +1,141 @@
+configfile: "config/config.yml"
+
+if config["input"].get("slack_webhook_url"):
+  URL=config["input"]["slack_webhook_url"]
+  onstart:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Started 🚀\"}}' {URL}")
+  onsuccess:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished Successfully! ✅\"}}' {URL}")
+  onerror:
+    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished With Errors! ❌\"}}' {URL}")
+
+include: "rules/common.smk"
+include: "rules/fastp.smk"
+include: "rules/bowtie2_build.smk"
+include: "rules/bowtie2_align.smk"
+include: "rules/pbc_qc.smk"
+include: "rules/filter.smk"
+include: "rules/bam_to_tagalign.smk"
+include: "rules/macs3_signal.smk"
+include: "rules/macs3_fold_change_signal.smk"
+include: "rules/macs3_pvalue_signal.smk"
+include: "rules/bedgraphtobigwig.smk"
+include: "rules/macs3_callpeak.smk"
+include: "rules/frag_len.smk"
+include: "rules/tss_enrichment.smk"
+include: "rules/frip_all.smk"
+include: "rules/pseudoreps.smk"
+include: "rules/macs3_pseudoreps.smk"
+include: "rules/idr.smk"
+include: "rules/overlap_peaks.smk"
+include: "rules/overlap_peaks_abc.smk"
+
+localrules:
+  # Test
+  fastp,
+  bowtie2_build,
+  bowtie2_align,
+  pbc_qc,
+  filter,
+  bam_to_tagalign,
+  macs3_signal,
+  macs3_fold_change_signal,
+  macs3_pvalue_signal,
+  bedgraphtobigwig,
+  macs3_callpeak,
+  frag_len,
+  tss_enrichment,
+  frip_all,
+  pseudoreps,
+  macs3_pseudoreps,
+  idr,
+  overlap_peaks,
+  overlap_peaks_abc,
+
+# # WIP
+# include: "workflow/rules/chrombpnet.0.smk"
+# include: "workflow/rules/chrombpnet.1.smk"
+# include: "workflow/rules/chrombpnet.2.smk"
+
+wildcard_constraints:
+    pseudorep=r"pseudorep(1|2)",
+
+rule all:
+    input:
+        # fastp
+        expand("results/fastp/{sample}.ok", sample=SAMPLES),
+       
+        # bowtie2-build
+        "results/bowtie2_build/reference.ok",
+
+        # bowtie2-align
+        expand("results/bowtie2_align/{sample}.ok", sample=SAMPLES),
+
+        # PBC QC
+        expand("results/pbc_qc/{sample}.ok", sample=SAMPLES),
+
+        # Filtering
+        expand("results/filter/{sample}.ok", sample=SAMPLES),
+
+        # BEDPE & tagAlign
+        expand("results/bedpe_tagalign/{sample}.ok", sample=SAMPLES),
+
+        # MACS3 signal bedGraph
+        expand("results/macs3_signal/{sample}.ok", sample=SAMPLES),
+
+        # bigtools bedgraphtobigwig
+        expand("results/macs3_signal/{sample}.bedgraphtobigwig.ok", sample=SAMPLES),
+
+        # fold change signal
+        expand("results/macs3_fold_change_signal/{sample}.ok", sample=SAMPLES),
+
+        # pvalue signal
+        expand("results/macs3_pvalue_signal/{sample}.ok", sample=SAMPLES),
+
+        # MACS3 callpeak
+        expand("results/macs3_callpeak/{sample}.ok", sample=SAMPLES),
+
+        # fragment length QC 
+        expand("results/frag_len/{sample}.ok", sample=SAMPLES),
+
+        # QC: TSS enrichment
+        expand("results/tss_enrichment/{sample}.ok", sample=SAMPLES),
+
+        # QC: FRiP
+        expand("results/frip_all/{sample}.ok", sample=SAMPLES),
+
+        # Pseudoreplicates & IDR
+        expand("results/pseudoreps/{sample}.ok", sample=SAMPLES),
+        
+        # MACS3 callpeak pseudoreps
+        expand("results/macs3_pseudoreps/{sample}.{pseudorep}.ok", sample=SAMPLES, pseudorep=["pseudorep1","pseudorep2"]),
+        
+        # IDR
+        expand("results/idr/{sample}.ok", sample=SAMPLES),
+
+        # Overlap peaks
+        expand("results/overlap_peaks/{sample}.ok", sample=SAMPLES),
+        
+        # Overlap peaks (ABC method) 
+        expand("results/overlap_peaks_abc/{sample}.ok", sample=SAMPLES),
+
+        # # WIP
+        # expand(
+        #     [
+        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_prep_nonpeaks.continue",
+        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_bias.continue",
+        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_full.continue"
+        #     ],
+        #     sample=SAMPLES,
+        #     genome=GENOMES
+        # ),
+        # "results/chrombpnet/best_bias_model.h5",
+        # "results/chrombpnet/best_bias_metrics.json",
+        # expand(
+        #     [
+        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_prep_nonpeaks.continue",
+        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_full.continue"
+        #     ],
+        #     sample=SAMPLES,
+        #     genome=GENOMES
+        # ),

@@ -1,14 +1,19 @@
 rule macs3_callpeak:
     input:
-        tagalign = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.tagalign.gz"
+        signal=rules.bam_to_tagalign.output.signal,
+        tagalign=rules.bam_to_tagalign.output.tagalign,
     output:
-        narrowpeak = f"{RESULTS_DIR}/macs3_callpeak/{{q}}/{{sample}}.{{genome}}_peaks.narrowPeak"
-    container: config["container"]
+        narrowpeak="results/macs3_callpeak/{sample}_peaks.narrowPeak",
+        signal=touch("results/macs3_callpeak/{sample}.ok"),
+    container: config["environments"]["custom"]
+    params:
+        q=config["params"]["q"],
+        parent_dir="results/macs3_callpeak/",
     log: 
-        f"{config['logdir']}/macs3_callpeak/{{q}}/{{sample}}.{{genome}}.log"
+        "logs/macs3_callpeak/{sample}.log"
     shell:
         """
         exec >> {log} 2>&1
-        macs3 callpeak -f BED -t {input.tagalign} -n {wildcards.sample}.{wildcards.genome} --outdir {RESULTS_DIR}/macs3_callpeak/{wildcards.q}/ --nomodel --shift -75 --keep-dup all --extsize 150 -g hs -q {wildcards.q}
+        macs3 callpeak -f BED -t {input.tagalign} -n {wildcards.sample} --outdir {params.parent_dir} --nomodel --shift -75 --keep-dup all --extsize 150 -g hs -q {params.q}
         """
 

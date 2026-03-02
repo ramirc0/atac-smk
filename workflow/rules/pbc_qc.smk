@@ -1,0 +1,14 @@
+rule pbc_qc:
+    input:
+        signal=rules.bowtie2_align.output.signal,
+        bam=rules.bowtie2_align.output.bam,
+    output:
+        pbc_json="results/pbc_qc/{sample}.pbc.json",
+        signal=touch("results/pbc_qc/{sample}.ok"),
+    container: config["environments"]["custom"]
+    log: "logs/pbc_qc/{sample}.log"
+    shell:
+        """
+        exec >> {log} 2>&1
+        python workflow/rules/scripts/pbc_qc.py {input.bam} {output.pbc_json}
+        """

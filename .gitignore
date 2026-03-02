@@ -1,22 +1,20 @@
 # User-defined
-.*/
-results*/
-results/
-notebooks/run_ccre_pipeline/
-notebooks/ccre_pipeline_stuff/
-notebooks/greg_notebooks/
+.nv/
 logs/
-test/
-jobs/
+.keras/
+results/
+scratch/
+.config/
+results*/
+notebooks/
+resources/
+.snakemake/
 example-report/
-datavzrd.config.yaml
-qc_metrics.csv
-*.tsv
-ARCHIVED/
-uv.lock
-prototyping/
-workflow/rules/envs/*
-!workflow/rules/envs/idr.yaml
+workflow/rules/envs/
+workflow/rules/chrombpnet*
+workflow/rules/scripts/bamtobedpe.py
+workflow/rules/scripts/bam_to_tagalign.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

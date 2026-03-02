@@ -1,30 +1,25 @@
+resources:
+  tss_reference: "resources/ENCFF493CCB.bed"
+  blacklist: "resources/hg38.blacklist.bed"
+  chrombpnet_config_json: "resources/fold_0.json"
+  chrombpnet_bias_model: "resources/ENCSR868FGK_bias_fold_0.h5"
+  reference_fasta: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+  reference_chromsizes: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.chromsizes"
 
-input_files:
-  metadata: "jobs/2025-12-18/metadata.tsv"
-  tss_reference_bed: "jobs/2025-12-18/ENCFF493CCB.bed" # TSS Reference
-  blacklist: "jobs/2025-12-18/hg38.blacklist.bed"
-  chrombpnet_config_json: "jobs/2025-12-18/fold_0.json"
-  chrombpnet_bias_model: "jobs/2025-12-18/ENCSR868FGK_bias_fold_0.h5"
+params:
+  k: 4
+  q: 0.05
+  p: 0.01
+  samtools_exclude_flag: 1804
+  samtools_include_flag: 2
+  bias_threshold_factor: 0.5
 
-genomes:
-  GRCH38: "jobs/2025-12-18/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
+input:
+  slack_webhook_url: "https://hooks.slack.com/services/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"
+  sample_map: "MOHD.sample_map.tsv"
+  tmp_dir: ".tmp"
 
-qvals:
-  - 0.05 # The first qvalue will be used for multiQC
-  - 0.01
-
-# i32 (1..16) or -1 (all)
-# Default is 1 (report the best alignment)
-k: 4
-samtools_exclude_flag: 1804
-bias_threshold_factor: 0.5
-
-results_dir: "results" # RELATIVE PATH
-workdir: "/zata/zippy/ramirezc/atac-smk" # ABSOLUTE PATH
-tmpdir: "/tmp" # ABSOLUTE PATH
-picard_tmpdir: ".picard" # RELATIVE PATH
-logdir: "logs" # RELATIVE PATH
-# container: "docker://clarity001/atac-smk:latest"
-container: "docker://clarity001/atac-smk:opt"
-chrombpnet_container: "docker://clarity001/chrombpnet:latest"
-conda_env: "envs/idr.yaml"
+environments:
+  custom: "docker://clarity001/atac-smk:opt"
+  chrombpnet: "docker://clarity001/chrombpnet:latest"
+  idr: "environments/idr.yaml"

@@ -9,3 +9,8 @@ dependencies = [
     "polars>=1.31.0",
     "pyarrow>=21.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+]

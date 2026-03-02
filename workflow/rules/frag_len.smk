@@ -1,12 +1,14 @@
 rule frag_len:
     input:
-        bam = f"{RESULTS_DIR}/filter/{{sample}}-{{genome}}.bam"
+        signal=rules.filter.output.signal,
+        bam=rules.filter.output.bam,
     output: 
-        png = f"{RESULTS_DIR}/frag_len/{{sample}}-{{genome}}.png", 
-        metrics = f"{RESULTS_DIR}/frag_len/{{sample}}-{{genome}}.txt"
-    container: config["container"]
+        png="results/frag_len/{sample}.png", 
+        metrics="results/frag_len/{sample}.txt",
+        signal=touch("results/frag_len/{sample}.ok"),
+    container: config["environments"]["custom"]
     log: 
-        f"{config['logdir']}/frag_len/{{sample}}-{{genome}}.log"
+        "logs/frag_len/{sample}.log"
     shell:
         """
         exec >> {log} 2>&1

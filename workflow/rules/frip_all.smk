@@ -1,16 +1,17 @@
 rule frip_all:
     input: 
-        peaks = f"{RESULTS_DIR}/macs3_callpeak/{{q}}/{{sample}}.{{genome}}_peaks.narrowPeak", 
-        reads = f"{RESULTS_DIR}/bedpe_tagalign/{{sample}}-{{genome}}.tagalign.gz"
+        peaks_signal=rules.macs3_callpeak.output.signal,
+        tagalign_signal=rules.bam_to_tagalign.output.signal,
+        peaks=rules.macs3_callpeak.output.narrowpeak,
+        tagalign=rules.bam_to_tagalign.output.tagalign,
     output:
-        frip_report = f"{RESULTS_DIR}/frip_all/{{q}}/{{sample}}-{{genome}}.txt"
-    container: config['container']
+        frip_report = "results/frip_all/{sample}.txt",
+        signal=touch("results/frip_all/{sample}.ok"),
+    container: config['environments']['custom']
     log: 
-        f"{config['logdir']}/frip_all/{{sample}}-{{genome}}-{{q}}.log"
+        "logs/frip_all/{sample}.log"
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/calculate_frip.py {input.reads} {input.peaks} {output.frip_report}
+        python workflow/rules/scripts/calculate_frip.py {input.tagalign} {input.peaks} {output.frip_report}
         """ 
-
-# TODO: Add extra FRiP calculations for overlap_peaks and overlap_peaks_jill rules

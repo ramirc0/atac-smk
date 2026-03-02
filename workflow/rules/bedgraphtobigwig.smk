@@ -1,21 +1,19 @@
 rule bedgraphtobigwig:
     input: 
-        bedgraph = f"{RESULTS_DIR}/macs3_signal/{{sample}}-{{genome}}_treat_pileup.bdg",
-        chromsizes = f"{RESULTS_DIR}/bowtie2_build/{{genome}}/{{genome}}.chromsizes",
-        chromsizes_bed = f"{RESULTS_DIR}/bowtie2_build/{{genome}}/{{genome}}.chromsizes.bed",
+        macs3_signal=rules.macs3_signal.output.signal,
+        bowtie2_build_signal=rules.bowtie2_build.output.signal,
+        bedgraph=rules.macs3_signal.output.bedgraph,
+        chromsizes=rules.bowtie2_build.output.chromsizes,
+        chromsizes_bed=rules.bowtie2_build.output.chromsizes_bed,
     output:
-        bigwig = f"{RESULTS_DIR}/macs3_signal/{{sample}}-{{genome}}.bigWig"
-    container: config["container"]
-    log:
-        f"{config['logdir']}/bedgraphtobigwig/{{sample}}-{{genome}}.log"
-    params:
-        prefix = lambda wildcards: "-".join(wildcards),
+        bedgraph=temp("results/macs3_signal/{sample}.bg"),
+        bigwig="results/macs3_signal/{sample}.bigWig",
+        signal=touch("results/macs3_signal/{sample}.bedgraphtobigwig.ok"),
+    container: config["environments"]["custom"]
+    log: "logs/bedgraphtobigwig/{sample}.log"
     shell:
         """
         exec >> {log} 2>&1
-        echo "Fixing bedGraph"
-        bedtools intersect -a {input.bedgraph} -b {input.chromsizes_bed} -sorted > {RESULTS_DIR}/macs3_signal/{params.prefix}.bg
-
-        echo "Running bigtools bedgraphtobigwig"
-        bedGraphToBigWig {RESULTS_DIR}/macs3_signal/{params.prefix}.bg {input.chromsizes} {output.bigwig}
+        bedtools intersect -a {input.bedgraph} -b {input.chromsizes_bed} -sorted > {output.bedgraph}
+        bedGraphToBigWig {output.bedgraph} {input.chromsizes} {output.bigwig}
         """
