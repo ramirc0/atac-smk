@@ -44,14 +44,16 @@ localrules:
   overlap_peaks_abc,
 
 SLACK_WEBHOOK_URL=os.environ.get("SLACK_WEBHOOK_URL")
-print(f"SLACK_WEBHOOK_URL: {SLACK_WEBHOOK_URL}")
 if SLACK_WEBHOOK_URL:
+  print("SLACK_WEBHOOK_URL found")
   onstart:
     shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Started 🚀\"}}' {SLACK_WEBHOOK_URL}")
   onsuccess:
     shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished Successfully! ✅\"}}' {SLACK_WEBHOOK_URL}")
   onerror:
     shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished With Errors! ❌\"}}' {SLACK_WEBHOOK_URL}")
+else:
+  print("SLACK_WEBHOOK_URL not found")
 
 # # WIP
 # include: "workflow/rules/chrombpnet.0.smk"

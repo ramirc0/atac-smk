@@ -1,5 +1,5 @@
 from pathlib import Path
-fromt dotenv import load_dotenv
+from dotenv import load_dotenv
 import polars as pl
 import math
 import glob

@@ -55,6 +55,7 @@ dependencies:
   - dill=0.4.1=pyhcf101f3_0
   - docutils=0.22.4=pyhd8ed1ab_0
   - dpath=2.2.0=pyha770c72_1
+  - duckdb=1.4.4=h332efcf_0
   - eido=0.2.5=pyhd8ed1ab_0
   - executing=2.2.1=pyhd8ed1ab_0
   - gflags=2.2.2=h5888daf_1005
@@ -178,6 +179,8 @@ dependencies:
   - pysocks=1.7.1=pyha55dd90_7
   - python=3.13.12=hc97d973_100_cp313
   - python-dateutil=2.9.0.post0=pyhe01879c_2
+  - python-dotenv=1.2.2=pyhcf101f3_0
+  - python-duckdb=1.4.4=py313h7033f15_0
   - python-fastjsonschema=2.21.2=pyhe01879c_0
   - python-gil=3.13.12=h4df99d1_100
   - python-tzdata=2025.3=pyhd8ed1ab_0
