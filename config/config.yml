@@ -12,7 +12,8 @@ params:
   p: 0.01
   samtools_exclude_flag: 1804
   samtools_include_flag: 2
-  bias_threshold_factor: 0.5
+  # # chrombpnet
+  # bias_threshold_factor: 0.5
 
 input:
   slack_webhook_url: "https://hooks.slack.com/services/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"
@@ -20,6 +21,6 @@ input:
   tmp_dir: ".tmp"
 
 environments:
-  custom: "docker://clarity001/atac-smk:opt"
+  custom: "docker://clarity001/atac-smk:latest"
   chrombpnet: "docker://clarity001/chrombpnet:latest"
   idr: "environments/idr.yaml"

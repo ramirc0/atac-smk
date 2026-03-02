@@ -10,7 +10,8 @@ notebooks/
 resources/
 .snakemake/
 example-report/
-workflow/rules/envs/
+workflow/rules/envs/*
+!workflow/rules/envs/idr.yaml
 workflow/rules/chrombpnet*
 workflow/rules/scripts/bamtobedpe.py
 workflow/rules/scripts/bam_to_tagalign.py
