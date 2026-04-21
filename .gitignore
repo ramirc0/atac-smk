@@ -8,6 +8,8 @@ scratch/
 results*/
 notebooks/
 resources/
+layout.txt
+pipeline.txt
 .snakemake/
 example-report/
 workflow/rules/envs/*
