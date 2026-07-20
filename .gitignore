@@ -13,8 +13,9 @@ pipeline.txt
 .snakemake/
 example-report/
 workflow/rules/envs/*
-!workflow/rules/envs/idr.yaml
 workflow/rules/chrombpnet*
+make_sample_map_example.py
+!workflow/rules/envs/idr.yaml
 workflow/rules/scripts/bamtobedpe.py
 workflow/rules/scripts/bam_to_tagalign.py
 

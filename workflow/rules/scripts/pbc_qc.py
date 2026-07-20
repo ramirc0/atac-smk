@@ -65,9 +65,9 @@ def main():
     print(f"Unique reads: {no_unique_reads}")
     print(f"Reads seen twice: {no_reads_seen_twice}")
 
-    PBC1 = no_total_reads / no_distict_reads
+    PBC1 = no_unique_reads / no_distict_reads
     if no_reads_seen_twice != 0:
-        PBC2 = no_total_reads / no_reads_seen_twice
+        PBC2 = no_unique_reads / no_reads_seen_twice
     else:
         PBC2 = float('inf')
     NRF = no_distict_reads / no_total_reads
