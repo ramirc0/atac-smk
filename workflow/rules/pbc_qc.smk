@@ -10,5 +10,5 @@ rule pbc_qc:
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/pbc_qc.py {input.bam} {output.pbc_json}
+        python workflow/scripts/pbc_qc.py --bam {input.bam} --output {output.pbc_json}
         """

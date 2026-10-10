@@ -13,5 +13,5 @@ rule frip_all:
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/calculate_frip.py {input.tagalign} {input.peaks} {output.frip_report}
+        python workflow/scripts/calculate_frip.py --tagalign {input.tagalign} --peaks {input.peaks} --output {output.frip_report}
         """ 

@@ -1,28 +1,50 @@
-import subprocess
+"""Compute the fraction of tagAlign reads that fall in peaks (FRiP)."""
+
 import argparse
+import subprocess
+
+
+def build_parser():
+    """Build the calculate_frip.py command-line parser.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Parser for the calculate_frip.py flags.
+    """
+    p = argparse.ArgumentParser(description="Calculate the fraction of reads in peaks.")
+    p.add_argument("--tagalign", required=True, help="Gzipped tagAlign of reads.")
+    p.add_argument("--peaks", required=True, help="Peaks BED.")
+    p.add_argument("--output", required=True, help="Text file for the FRiP line.")
+    return p
+
 
 def calculate_fraction_reads_in_peaks(fragments_bed, peaks_bed):
-    """
-    Calculate the fraction of reads (fragments) that overlap peaks using bedtools.
+    """Compute the fraction of reads that overlap a peak, using bedtools.
 
-    :param fragments_bed: Path to the BED file of fragments.
-    :param peaks_bed: Path to the BED file of peaks.
-    :return: Fraction of reads in peaks (float).
+    Parameters
+    ----------
+    fragments_bed : str
+        Gzipped BED of reads.
+    peaks_bed : str
+        BED of peaks.
+
+    Returns
+    -------
+    float
+        Reads overlapping a peak over all reads, or 0 if there are no reads.
     """
     try:
-        # Use bedtools intersect to find overlapping fragments and peaks
         cmd_overlap = f"bedtools intersect -u -a {fragments_bed} -b {peaks_bed} | wc -l"
         cmd_total = f"zcat {fragments_bed} | wc -l"
-        
-        # Count the number of overlapping fragments
-        overlapping_count = int(subprocess.check_output(cmd_overlap, shell=True).strip())
-        
-        # Count the total number of fragments
+
+        overlapping_count = int(
+            subprocess.check_output(cmd_overlap, shell=True).strip()
+        )
         total_count = int(subprocess.check_output(cmd_total, shell=True).strip())
-        
-        # Calculate the fraction of reads in peaks
+
         fraction_in_peaks = overlapping_count / total_count if total_count > 0 else 0
-        
+
         return fraction_in_peaks
 
     except subprocess.CalledProcessError as e:
@@ -33,22 +55,22 @@ def calculate_fraction_reads_in_peaks(fragments_bed, peaks_bed):
         raise
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Calculate the fraction of reads in peaks.")
-    parser.add_argument("fragments_bed", help="Path to the BED file of fragments")
-    parser.add_argument("peaks_bed", help="Path to the BED file of peaks")
-    parser.add_argument("output_file", help="Path to the output text file to write the fraction of reads in peaks")
+def main(argv=None):
+    """Compute FRiP and write it as one line of text.
 
-    args = parser.parse_args()
+    Parameters
+    ----------
+    argv : list of str, optional
+        Command-line arguments. Defaults to `sys.argv[1:]`.
+    """
+    args = build_parser().parse_args(argv)
 
-    # Calculate the fraction of reads in peaks
-    fraction = calculate_fraction_reads_in_peaks(args.fragments_bed, args.peaks_bed)
+    fraction = calculate_fraction_reads_in_peaks(args.tagalign, args.peaks)
 
-    # Write the result to the output file
-    with open(args.output_file, "w") as f:
+    with open(args.output, "w") as f:
         f.write(f"Fraction of reads in peaks: {fraction}\n")
-    
-    print(f"Fraction of reads in peaks written to {args.output_file}")
+
+    print(f"Fraction of reads in peaks written to {args.output}")
 
 
 if __name__ == "__main__":

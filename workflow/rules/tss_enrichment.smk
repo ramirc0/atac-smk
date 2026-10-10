@@ -4,7 +4,8 @@ rule tss_enrichment:
         bam=rules.filter.output.bam,
         tss_reference=config['resources']['tss_reference'],
     output:
-        png="results/tss_enrichment/{sample}.png", 
+        plot="results/tss_enrichment/{sample}.svg",
+        plot_png="results/tss_enrichment/{sample}.png",
         metrics="results/tss_enrichment/{sample}.txt",
         signal=touch("results/tss_enrichment/{sample}.ok"),
     software: SOFTWARE_ENV
@@ -13,6 +14,6 @@ rule tss_enrichment:
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/tss_enrichment.py {input.bam} {input.tss_reference} {output.png} {output.metrics}
+        python workflow/scripts/tss_enrichment.py --bam {input.bam} --tss {input.tss_reference} --plot {output.plot} --output {output.metrics}
         """
 

@@ -10,6 +10,6 @@ rule pseudoreps:
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/bedpe_to_pseudoreps.py {input.bedpe} {output.tagalign[0]} {output.tagalign[1]}
+        python workflow/scripts/bedpe_to_pseudoreps.py --bedpe {input.bedpe} --pseudorep1 {output.tagalign[0]} --pseudorep2 {output.tagalign[1]}
         """
 

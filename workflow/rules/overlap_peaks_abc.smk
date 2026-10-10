@@ -11,5 +11,5 @@ rule overlap_peaks_abc:
     shell:
         """
         exec >> {log} 2>&1
-        python workflow/rules/scripts/overlap_peaks_abc.py {input.narrowpeak} {input.pseudorep1} {input.pseudorep2} {output.overlap_peaks}
+        python workflow/scripts/overlap_peaks_abc.py --peaks {input.narrowpeak} --pseudorep1 {input.pseudorep1} --pseudorep2 {input.pseudorep2} --output {output.overlap_peaks}
         """

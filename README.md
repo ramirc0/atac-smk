@@ -197,8 +197,8 @@ The pipeline produces results organized under the `results/` directory:
 | `results/macs3_fold_change_signal/` | Fold-change bigWig signal |
 | `results/macs3_pvalue_signal/` | P-value bigWig signal |
 | `results/macs3_callpeak/` | narrowPeak files |
-| `results/frag_len/` | Fragment length distribution PNG and TXT |
-| `results/tss_enrichment/` | TSS enrichment plot PNG and score TXT |
+| `results/frag_len/` | Fragment length distribution SVG, PNG and TXT |
+| `results/tss_enrichment/` | TSS enrichment plot SVG and PNG, score TXT |
 | `results/frip_all/` | FRiP metric TXT |
 | `results/pseudoreps/` | Pseudoreplicate tagAlign files |
 | `results/macs3_pseudoreps/` | Pseudoreplicate narrowPeak files |
@@ -208,7 +208,7 @@ The pipeline produces results organized under the `results/` directory:
 
 ### Custom Scripts
 
-The pipeline includes several custom Python scripts located in `workflow/rules/scripts/`:
+The pipeline includes several custom Python scripts located in `workflow/scripts/`:
 
 - **`pbc_qc.py`** — Computes library complexity metrics (PBC1, PBC2, NRF) from a BAM file using `oxbow` and `polars`.
 - **`bam_to_tagalign.py`** — Converts a filtered BAM to BEDPE and tagAlign format.
