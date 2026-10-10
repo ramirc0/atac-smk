@@ -9,6 +9,7 @@ README.md holds the layout, steps, outputs, and style conventions. Follow it.
 pixi run lint                                # ruff check, ruff format --check, numpydoc lint
 pixi run snakemake -n -p --profile profiles/local
 pixi run snakemake --profile profiles/local
+pixi run snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml  # ENCODE end-to-end test
 ```
 
 ## Two pixi workspaces

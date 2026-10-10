@@ -21,6 +21,7 @@ workflow/
     qc.smk               PBC/NRF, fragment lengths, TSS enrichment, FRiP
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         rule envs (pixi workspace): default and idr
+.tests/integration/      ENCODE end-to-end test: config + sample sheet
 profiles/
   local/config.yaml      local execution
   slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
@@ -44,6 +45,18 @@ cluster settings, such as partitions and the `cascadelake` constraint. Adapt the
 for another cluster with the
 [SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
 Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
+
+## Integration test
+
+`.tests/integration/` runs four ENCODE ATAC-seq replicates end to end on full
+GRCh38. Its inputs live on the Weng Lab cluster, so it runs only there.
+
+```bash
+snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
+```
+
+Outputs go under `results/encode-integration/`. Compare the QC with ENCODE's
+for the same replicates.
 
 ## Inputs
 
