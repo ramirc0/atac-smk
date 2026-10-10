@@ -27,8 +27,8 @@ set-threads:
   pbc_qc: 16
   filter: 22
   tagalign: 22
-  frag_len: 22
-  tss_enrichment: 4
+  frag_len: 1
+  tss_enrichment: 1
   pseudoreps: 1
   macs3: 1
   macs3_pseudorep: 1

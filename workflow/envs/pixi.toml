@@ -27,6 +27,9 @@ tqdm = "==4.67.1"
 cutadapt = ">=5.2,<6"
 python-zlib-ng = ">=1.0.0,<2"
 openssl = ">=3.6.5,<4"
+picard = ">=3.5.0,<4"
+scipy = ">=1.18.1,<2"
+deeptools = ">=3.5.6,<4"
 
 # The conda oxbow pulls a pyarrow that needs a newer lz4-c than sambamba allows.
 [pypi-dependencies]

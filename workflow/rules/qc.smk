@@ -24,42 +24,59 @@ rule pbc_qc:
         """
 
 
+# ENCODE's fragment length QC, on every record. ENCODE stops Picard after the
+# first 5M records, which in a sorted BAM come mostly from chr1.
 rule frag_len:
     input:
         f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
     output:
+        qc=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.nucleosomal.qc",
         plot=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.svg",
         plot_png=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.png",
-        metrics=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.txt",
+    params:
+        tmp_dir=TMP_DIR,
     log:
         f"{LOGDIR}/frag_len/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/frag_len/{{sample}}.tsv",
+        f"{BENCHDIR}/frag_len/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/plot_fragment_length_distr.py \
-            --bam {input:q} \
-            --plot {output.plot:q} \
-            --output {output.metrics:q}
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        picard -Xmx4g CollectInsertSizeMetrics \
+            -I {input:q} \
+            -O "$tmp/hist.txt" \
+            -H "$tmp/hist.pdf" \
+            -W 1000 \
+            -VERBOSITY ERROR \
+            -QUIET true
+        python workflow/scripts/fraglen_qc.py \
+            --histogram "$tmp/hist.txt" \
+            --qc {output.qc:q} \
+            --plot {output.plot:q}
         """
 
 
 rule tss_enrichment:
     input:
         bam=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
+        bai=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam.bai",
         tss=TSS_REFERENCE,
+        chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",
+        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
     output:
+        qc=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.tss_enrich.qc",
         plot=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.svg",
         plot_png=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.png",
-        metrics=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.txt",
     log:
         f"{LOGDIR}/tss_enrichment/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/tss_enrichment/{{sample}}.tsv",
+        f"{BENCHDIR}/tss_enrichment/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
@@ -69,8 +86,10 @@ rule tss_enrichment:
         python workflow/scripts/tss_enrichment.py \
             --bam {input.bam:q} \
             --tss {input.tss:q} \
-            --plot {output.plot:q} \
-            --output {output.metrics:q}
+            --chromsizes {input.chromsizes:q} \
+            --fastq {input.r1:q} \
+            --qc {output.qc:q} \
+            --plot {output.plot:q}
         """
 
 

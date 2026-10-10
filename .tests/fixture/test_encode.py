@@ -313,8 +313,8 @@ def test_tss_enrichment_matches_encode(run):
         f"--chrsz {CHRSZ.name} --tss {TSS.name} --read-len {n}",
     )
     theirs = float(lines(out / "S1.tss_enrich.qc")[0])
-    ours = json.loads((run / "S1/tss_enrichment/S1.txt").read_text())
-    assert ours["tss_enrichment_score"] == pytest.approx(theirs, rel=1e-9)
+    ours = float(lines(run / "S1/tss_enrichment/S1.tss_enrich.qc")[0])
+    assert ours == pytest.approx(theirs, rel=1e-9)
 
 
 def test_fragment_length_qc_matches_encode(run):
@@ -326,7 +326,7 @@ def test_fragment_length_qc_matches_encode(run):
         f"python3 $(which encode_task_fraglen_stat_pe.py) --nodup-bam {bam.name} "
         "--picard-java-heap 4G",
     )
-    ours = nucleosomal_qc(run / "S1/frag_len/S1.txt")
+    ours = nucleosomal_qc(run / "S1/frag_len/S1.nucleosomal.qc")
     theirs = nucleosomal_qc(out / "S1.nucleosomal.qc")
     assert ours.keys() == theirs.keys()
     for metric, value in theirs.items():
