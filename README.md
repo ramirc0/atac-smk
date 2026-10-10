@@ -1,222 +1,186 @@
-# ATAC-seq Snakemake Pipeline
+# atac-smk
 
-## Overview
+A [Snakemake](https://github.com/snakemake/snakemake) pipeline for paired-end
+ATAC-seq. It follows the [ENCODE ATAC-seq processing standards](https://www.encodeproject.org/atac-seq/).
+Reads are trimmed and aligned. The filtered alignments feed signal tracks, peak
+calls, library QC and IDR on pseudoreplicates.
 
-Here we present a [Snakemake](https://github.com/snakemake/snakemake.git) pipeline for ATAC-seq data processing, peak calling, quality control, and reproducibility analysis across multiple samples.
+## Layout
 
-This pipeline implements the [ENCODE ATAC-seq processing standards](https://www.encodeproject.org/atac-seq/), covering adapter trimming, alignment, filtering, signal track generation, peak calling, and irreproducible discovery rate (IDR) analysis.
+```
+config/
+  config.yaml.template   parameters + paths; copy to config.yaml (gitignored)
+  samples.example.tsv    one row per sample: sample_id, r1, r2
+workflow/
+  Snakefile              includes the rule files, defines rule all
+  rules/
+    common.smk           config, sample sheet, path constants
+    preprocess.smk       fastp, bowtie2 index and alignment, filtering, tagAlign
+    signal.smk           MACS3 pileup, fold-change and p-value bigWigs
+    peaks.smk            MACS3 peaks, pseudoreplicates, IDR, overlap peaks
+    qc.smk               PBC/NRF, fragment lengths, TSS enrichment, FRiP
+  scripts/               argparse scripts, each with build_parser() + main()
+  envs/pixi.toml         rule envs (pixi workspace): default and idr
+profiles/
+  local/config.yaml      local execution
+  slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
+pixi.toml                launcher env + lint task
+pyproject.toml           ruff + numpydoc config
+```
 
-## Example Usage
-
-### Prerequisites
-
-To run this pipeline, you will need paired-end FASTQ files from ATAC-seq experiments. A sample map TSV file must be prepared that maps sample accessions to their corresponding FASTQ paths (see [Example Configfile](#example-configfile)).
-
-You will also need the following reference files placed in a `resources/` directory:
-
-- GRCh38 reference genome FASTA (no-alt analysis set)
-- Reference genome index (`.fai`) and chromosome sizes
-- TSS reference BED file (e.g., `ENCFF493CCB.bed`)
-
-### Dependencies
-
-This pipeline requires the following dependencies:
-
-- [`pixi`](https://pixi.sh)
-- (Optional) [`slurm`](https://slurm.schedmd.com/quickstart.html)
-
-To start, set up the launcher environment:
+## Running
 
 ```bash
-pixi shell
+cp config/config.yaml.template config/config.yaml  # then edit
+cp config/samples.example.tsv config/samples.tsv   # then edit
+pixi shell                                         # launcher env
+snakemake -n -p --profile profiles/local           # dry run
+snakemake --profile profiles/local                 # local
+snakemake --profile profiles/slurm                 # SLURM
 ```
 
-> [!NOTE]
-> Rules run in two pixi environments from `workflow/envs/pixi.toml`: `default` (for most rules) and `idr`, since IDR requires a pinned Python 3.9 / NumPy 1.19 stack.
+Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
+cluster settings, such as partitions and the `cascadelake` constraint. Adapt them
+for another cluster with the
+[SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
+Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 
-### Example Configfile
+## Inputs
 
-For a complete example, see [config/config.yml](config/config.yml).
+The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
+and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments.
+Each `sample_id` MUST be unique.
 
-#### Input
+The references live in `resources/` (gitignored):
 
-```yaml
-input:
-  sample_map: "MOHD.sample_map.tsv"
-  tmp_dir: ".tmp"
-```
+- the GRCh38 FASTA, no-alt analysis set
+- a TSS BED, e.g. `ENCFF493CCB.bed`
 
-- `input.sample_map`: Path to your sample map file. This is a tab-delimited file **with a header row**. It must contain columns `mohd_accession`, `r1`, and `r2`. Lines beginning with `#` are treated as comments. Each `mohd_accession` must be unique.
+## Configuration
 
-  Example:
+| Key | Meaning |
+|---|---|
+| `samples` | Sample sheet path. |
+| `outdir` | Results root. |
+| `run_id` | Run name. Outputs go under `results/<run_id>/`. |
+| `pixi_env` | Environment of `workflow/envs/pixi.toml` that most rules use. |
+| `tmp_dir` | Scratch for `samtools sort` and IDR. Use `.tmp` where `/tmp` is mounted `noexec`. |
+| `references.fasta` | Reference genome FASTA. |
+| `references.tss` | TSS BED for TSS enrichment. |
+| `params.k` | Alignments bowtie2 reports per read (`-k`). |
+| `params.q` | MACS3 q-value cutoff for full-sample peaks. |
+| `params.p` | MACS3 p-value cutoff for pseudoreplicate peaks. |
+| `params.samtools_exclude_flag` | SAM flags to drop. `1804` drops unmapped (4), mate unmapped (8), secondary (256), QC fail (512) and duplicate (1024) reads. |
+| `params.samtools_include_flag` | SAM flags to require. `2` keeps proper pairs. |
 
-  ```
-  mohd_accession	r1	r2
-  MOHD000001	/path/to/sample1_R1.fastq.gz	/path/to/sample1_R2.fastq.gz
-  MOHD000002	/path/to/sample2_R1.fastq.gz	/path/to/sample2_R2.fastq.gz
-  ```
+## Steps
 
-- `input.tmp_dir`: Temporary directory for intermediate files. In some compute environments, `/tmp` is mounted with `noexec`, in which case you should set this to `.tmp`.
+Preprocessing, in `preprocess.smk`:
 
-#### Resources
+- `fastp` trims adapters and low-quality bases. It writes HTML and JSON reports.
+- `bowtie2_build` indexes the reference and writes its chromosome sizes.
+- `bowtie2_align` aligns with `-X 2000 --mm -k 4` into a sorted, indexed BAM.
+- `filter` marks duplicates with sambamba and keeps proper pairs with MAPQ ≥ 30.
+  It drops every SAM line that mentions `chrM`.
+- `bam_to_tagalign` writes a BEDPE and a Tn5-shifted, sorted tagAlign.
 
-```yaml
-resources:
-  tss_reference: "resources/ENCFF493CCB.bed"
-  reference_fasta: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
-  reference_chromsizes: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.chromsizes"
-```
+Signal tracks, in `signal.smk`:
 
-These are paths to the reference genome and annotation files required by the pipeline. The TSS reference is used for QC metrics.
+- `macs3_signal` runs `macs3 callpeak -B` for the pileup and control lambda.
+- `bedgraphtobigwig` converts the pileup to bigWig.
+- `macs3_fold_change_signal` and `macs3_pvalue_signal` run `macs3 bdgcmp`
+  (`-m FE` and `-m ppois`) and convert the result to bigWig.
 
-#### Parameters
+Peaks, in `peaks.smk`:
 
-```yaml
-params:
-  k: 4
-  q: 0.05
-  p: 0.01
-  samtools_exclude_flag: 1804
-  samtools_include_flag: 2
-```
+- `macs3_callpeak` calls full-sample peaks at the `params.q` cutoff.
+- `pseudoreps` shuffles the BEDPE rows (seed 61) and splits them into two
+  pseudoreplicate tagAligns.
+- `macs3_pseudoreps` calls peaks on each pseudoreplicate at the `params.p` cutoff.
+- `idr` scores the pseudoreplicate peaks with IDR and plots the result.
+- `overlap_peaks` keeps pseudoreplicate 1 peaks that overlap a pseudoreplicate 2
+  peak.
+- `overlap_peaks_abc` keeps full-sample peaks that overlap a peak in each
+  pseudoreplicate. The overlap covers at least half of either peak.
 
-- `params.k`: Number of alignments to report per read for Bowtie2 (`-k` flag). Default is 4.
-- `params.q`: MACS3 q-value threshold for peak calling on the full sample.
-- `params.p`: MACS3 p-value threshold for peak calling on pseudoreplicates (used in IDR analysis).
-- `params.samtools_exclude_flag`: SAM flag bits to exclude during filtering. The default value of `1804` excludes unmapped reads (4), mate-unmapped reads (8), secondary alignments (256), reads failing QC (512), and PCR duplicates (1024).
-- `params.samtools_include_flag`: SAM flag bits to require. The default value of `2` requires proper pairs.
+QC, in `qc.smk`:
 
-### Pipeline Steps
+- `pbc_qc` computes PBC1, PBC2 and NRF from the unfiltered BAM.
+- `frag_len` counts fragment lengths and plots them. It reports the share of
+  nucleosome-free, mono-, di- and tri-nucleosomal fragments.
+- `tss_enrichment` scores Tn5 cut sites in a ±2 kb window around each TSS.
+- `frip_all` computes the fraction of tagAlign reads in peaks.
 
-The pipeline proceeds through the following stages:
+## Outputs
 
-#### Preprocessing
+Each sample writes to `results/<run_id>/<sample>/<step>/`. The bowtie2 index and
+chromosome sizes do not depend on the run. They go to `results/refs/bowtie2_build/`.
+Logs and benchmarks mirror the run layout under `logs/<run_id>/` and
+`benchmarks/<run_id>/`.
 
-- **fastp** — Adapter trimming and quality filtering of raw paired-end FASTQ files. Produces trimmed FASTQs and HTML/JSON QC reports.
+| Step directory | Key outputs |
+|---|---|
+| `fastp/` | Trimmed FASTQs, HTML and JSON reports |
+| `bowtie2_align/` | Sorted BAM, flagstat JSON |
+| `pbc_qc/` | PBC1, PBC2 and NRF JSON |
+| `filter/` | Filtered BAM, flagstat JSON |
+| `bedpe_tagalign/` | BEDPE, gzipped tagAlign |
+| `macs3_signal/` | Pileup and control lambda bedGraphs, pileup bigWig |
+| `macs3_fold_change_signal/` | Fold-change bedGraph and bigWig |
+| `macs3_pvalue_signal/` | P-value bedGraph and bigWig |
+| `macs3_callpeak/` | narrowPeak |
+| `frag_len/` | Distribution plot (SVG, PNG), range counts TXT |
+| `tss_enrichment/` | Profile plot (SVG, PNG), score JSON in a TXT |
+| `frip_all/` | FRiP TXT |
+| `pseudoreps/` | Pseudoreplicate tagAligns |
+| `macs3_pseudoreps/` | Pseudoreplicate narrowPeaks |
+| `idr/` | IDR BED, IDR plot PNG |
+| `overlap_peaks/` | Overlap peaks BED |
+| `overlap_peaks_abc/` | Overlap peaks BED (50% rule) |
 
-#### Alignment
+## Slack notifications
 
-- **bowtie2_build** — Builds a Bowtie2 index from the reference genome. Also generates chromosome sizes and a BED-format chromsizes file used by downstream signal track steps.
-- **bowtie2_align** — Aligns trimmed reads to the reference genome with Bowtie2 (`-X 2000 --mm -k 4`). Output is a coordinate-sorted, indexed BAM.
-
-#### Alignment QC
-
-- **pbc_qc** — Computes PCR Bottleneck Coefficients (PBC1, PBC2) and the Non-Redundant Fraction (NRF) from the aligned BAM. These library complexity metrics follow ENCODE standards. Output is a JSON report.
-
-#### Filtering
-
-- **filter** — Marks duplicates with sambamba, applies SAM flag filtering, enforces MAPQ ≥ 30, removes mitochondrial reads, and produces a final filtered BAM. Includes `samtools fixmate` and `samtools quickcheck` for integrity validation.
-
-#### Format Conversion
-
-- **bam_to_tagalign** — Converts the filtered BAM to BEDPE and gzipped tagAlign format for use with MACS3 and pseudoreplicate generation.
-
-#### Signal Track Generation
-
-- **macs3_signal** — Runs MACS3 `callpeak` with `-B` to produce treatment pileup and control lambda bedGraph files.
-- **macs3_fold_change_signal** — Computes fold-change signal (FE) over control using `macs3 bdgcmp`, then converts to bigWig.
-- **macs3_pvalue_signal** — Computes p-value signal (Poisson) using `macs3 bdgcmp`, then converts to bigWig.
-- **bedgraphtobigwig** — Converts the treatment pileup bedGraph to bigWig format using UCSC `bedGraphToBigWig`.
-
-#### Peak Calling
-
-- **macs3_callpeak** — Calls peaks on the full sample tagAlign with MACS3 using the configured q-value threshold. Produces a narrowPeak file.
-
-#### Library QC
-
-- **frag_len** — Computes and plots the fragment length distribution from the filtered BAM. Reports the percentage of fragments in nucleosome-free (< 147 bp), mono-nucleosomal (147–294 bp), di-nucleosomal (294–441 bp), and tri-nucleosomal (> 441 bp) ranges.
-- **tss_enrichment** — Calculates TSS enrichment score by aggregating cut-site signal in a ±2 kb window around annotated TSSs. Produces a plot and a JSON metric file.
-- **frip_all** — Calculates the Fraction of Reads in Peaks (FRiP) using bedtools intersection of tagAlign reads against called peaks.
-
-#### Reproducibility Analysis
-
-- **pseudoreps** — Splits the BEDPE file into two pseudoreplicates by random shuffling (seed = 61), then converts each to tagAlign format.
-- **macs3_pseudoreps** — Calls peaks on each pseudoreplicate tagAlign using MACS3 with the configured p-value threshold.
-- **idr** — Runs Irreproducible Discovery Rate (IDR) analysis on pseudoreplicate peak sets. Produces IDR-filtered peaks and a diagnostic plot.
-- **overlap_peaks** — Identifies peaks present in both pseudoreplicates using `bedtools intersect`.
-- **overlap_peaks_abc** — Identifies peaks from the full sample that overlap each pseudoreplicate peak set by ≥ 50% (reciprocal overlap filtering), following the ABC method.
-
-### Defining Resources
-
-All resource definitions for SLURM rules are located in [profile/slurm/config.yaml](profile/slurm/config.yaml).
-
-```yaml
-  bowtie2_align:
-    runtime: 720m
-    constraint: cascadelake
-    slurm_extra: "--exclude=z[1071,1024] --cpu-freq=High-High:Performance"
-    slurm_partition: 12hours
-    threads: 22
-    cpus_per_task: 22
-    mem: 64000MB
-```
-
-In this instance, we are requesting a job on a SLURM cluster with a runtime of 720 minutes, a specific constraint (i.e. cascadelake), a specific partition (i.e. 12hours), 22 threads, 22 CPUs per task, and 64000 MB of memory.
-
-These resource definitions are specific to the Weng Lab's SLURM cluster. If you are running the pipeline on your own cluster, you will need to adjust these values accordingly. We recommend consulting the [snakemake-executor-plugin-slurm documentation](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html) for further information.
-
-### Running the Pipeline
-
-With the configuration in place, you can run the pipeline:
-
-```bash
-snakemake --workflow-profile profile/slurm
-```
-
-> [!NOTE]
-> It is recommended that you run the pipeline in dry run mode first (add the `-n` flag). Also note that `snakemake` must be run in the root of this repository.
-
-#### Slack Notifications
-
-The pipeline supports optional Slack notifications. Set the `SLACK_WEBHOOK_URL` environment variable (e.g., via a `.env` file in the project root or by exporting it in your shell):
+Set `SLACK_WEBHOOK_URL` in the shell or in a `.env` file in the repository root.
+The pipeline then posts a Slack message when a run starts and another when it
+ends.
 
 ```bash
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```
 
-When set, the pipeline will send start, success, and error notifications to the configured Slack channel.
+## Environment
 
-#### Running Locally
+The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
+for pixi deployment and SLURM. The rule envs live in a second pixi workspace,
+`workflow/envs/`. Its `pixi.lock` pins every package.
+`default` runs most rules. `idr` runs IDR on the Python 3.9 / NumPy 1.19 stack it
+needs. pixi MUST be on `PATH`. Jobs install the envs on first use.
 
-If you cannot run on a SLURM cluster, you can run the pipeline locally. However, this is not a supported use case.
+The tool versions match `clarity001/atac-smk:opt`, the image that produced the
+production results.
 
-To run locally, the `localrules` directive in [workflow/Snakefile](workflow/Snakefile) already lists all rules. When uncommented (as in the default configuration), these rules will execute on the local machine. Comment out the rules you want to submit to SLURM instead.
+Add a dependency with `pixi add <pkg>` in `workflow/envs/`. After a hand edit,
+run `pixi lock` there (rules use `locked=True`). Any change to the manifest or
+lock reruns every rule. So does moving the workdir, because the env hash includes
+the workspace's absolute path.
 
-### Outputs
+## Conventions
 
-The pipeline produces results organized under the `results/` directory:
+The workflow follows the
+[Nextstrain Snakemake style guide](https://docs.nextstrain.org/en/latest/reference/snakemake-style-guide.html)
+and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html):
 
-| Directory | Key Outputs |
-|---|---|
-| `results/fastp/` | Trimmed FASTQs, HTML and JSON QC reports |
-| `results/bowtie2_align/` | Sorted BAMs, flagstat JSON |
-| `results/pbc_qc/` | Library complexity JSON (PBC1, PBC2, NRF) |
-| `results/filter/` | Filtered BAMs, flagstat JSON |
-| `results/bedpe_tagalign/` | BEDPE and tagAlign files |
-| `results/macs3_signal/` | Treatment pileup bedGraph, bigWig signal tracks |
-| `results/macs3_fold_change_signal/` | Fold-change bigWig signal |
-| `results/macs3_pvalue_signal/` | P-value bigWig signal |
-| `results/macs3_callpeak/` | narrowPeak files |
-| `results/frag_len/` | Fragment length distribution SVG, PNG and TXT |
-| `results/tss_enrichment/` | TSS enrichment plot SVG and PNG, score TXT |
-| `results/frip_all/` | FRiP metric TXT |
-| `results/pseudoreps/` | Pseudoreplicate tagAlign files |
-| `results/macs3_pseudoreps/` | Pseudoreplicate narrowPeak files |
-| `results/idr/` | IDR-filtered peaks BED and diagnostic PNG |
-| `results/overlap_peaks/` | Overlap peaks BED (intersect method) |
-| `results/overlap_peaks_abc/` | Overlap peaks BED (≥ 50% reciprocal overlap) |
-
-### Custom Scripts
-
-The pipeline includes several custom Python scripts located in `workflow/scripts/`:
-
-- **`pbc_qc.py`** — Computes library complexity metrics (PBC1, PBC2, NRF) from a BAM file using `oxbow` and `polars`.
-- **`bam_to_tagalign.py`** — Converts a filtered BAM to BEDPE and tagAlign format.
-- **`plot_fragment_length_distr.py`** — Extracts fragment lengths from a BAM and generates a distribution plot with nucleosome-region annotations.
-- **`tss_enrichment.py`** — Calculates TSS enrichment score by extracting Tn5 cut-site signal around annotated TSSs.
-- **`calculate_frip.py`** — Computes the Fraction of Reads in Peaks using bedtools.
-- **`bedpe_to_pseudoreps.py`** — Splits a BEDPE file into two pseudoreplicate tagAlign files by random shuffling.
-- **`overlap_peaks_abc.py`** — Identifies peaks with ≥ 50% reciprocal overlap across pseudoreplicates using `bioframe`.
+- No `run:` blocks. Custom logic lives in `workflow/scripts/`, called from `shell:`.
+- Raw, triple-quoted `shell` blocks (`r"""`), one option per line.
+- Every interpolation uses `:q` quoting.
+- Config reaches `shell` through `params:` (a `lambda`), never directly.
+- `input:` and `output:` are literal path strings. All paths are relative.
+- Rules tee logs to file and terminal (`exec &> >(tee {log:q})`).
+- Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
+- Plots use [poikilos](https://github.com/ramirc0/poikilos) with the `plain`
+  theme. `pk.save_figure()` writes the SVG and PNG pair. Rules declare both.
+- Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
+  `numpydoc lint`. Neither tool parses `.smk` files.
 
 ## References
 
