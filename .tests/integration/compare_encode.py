@@ -108,10 +108,9 @@ def ours(run, sample):
     """
     d = run / sample
     pbc = json.loads((d / f"pbc_qc/{sample}.pbc.json").read_text())
-    nucleosomal = {
-        k: v.split("\t")[1]
-        for k, v in table(d / f"frag_len/{sample}.nucleosomal.qc").items()
-    }
+    # Ratio rows: metric, pass flag, value, message.
+    rows = (d / f"frag_len/{sample}.nucleosomal.qc").read_text().splitlines()
+    nucleosomal = {r[0]: r[2] for r in (x.split("\t") for x in rows) if len(r) == 4}
     frip = pl.read_csv(d / f"frip/{sample}.tsv", separator="\t")
     frip = dict(zip(frip["peak_set"], frip["reads_in_peaks"] / frip["reads"]))
     return {
