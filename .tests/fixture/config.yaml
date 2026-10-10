@@ -9,6 +9,9 @@ references:
   fasta: resources/fixture/genome.fa
   tss: resources/fixture/ENCFF493CCB.bed.gz
   blacklist: resources/fixture/ENCFF356LFX.bed.gz
+  dhs: resources/fixture/ENCFF304XEX.bed.gz
+  promoters: resources/fixture/ENCFF140XLU.bed.gz
+  enhancers: resources/fixture/ENCFF212UAV.bed.gz
 
 params:
   multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1

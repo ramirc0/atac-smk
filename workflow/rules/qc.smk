@@ -133,3 +133,169 @@ rule frip:
             frip overlap {input.overlap:q}
         }} > {output:q}
         """
+
+
+# ENCODE's frac_mito: reads that align to the mitochondrial contig alone, over those
+# plus the reads mapped elsewhere in the main alignment. A read counts once, as
+# mapped if any of its alignments is, as SAMstats counts it.
+rule frac_mito:
+    input:
+        index=MITO_INDEX_FILES,
+        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
+        r2=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R2.fastq.gz",
+        bam=f"{OUTDIR}/{{sample}}/bowtie2_align/{{sample}}.bam",
+    output:
+        f"{OUTDIR}/{{sample}}/frac_mito/{{sample}}.frac_mito.qc",
+    params:
+        k=lambda w: config["params"]["multimapping"] + 1,
+        index=MITO_INDEX,
+        mito=lambda w: config["mito_chr_name"],
+        tmp_dir=TMP_DIR,
+    log:
+        f"{LOGDIR}/frac_mito/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/frac_mito/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        mito=$(bowtie2 \
+            -k {params.k:q} \
+            -X 2000 \
+            --mm \
+            --threads {threads:q} \
+            -x {params.index:q} \
+            -1 {input.r1:q} \
+            -2 {input.r2:q} \
+            | samtools view -c -F 0x904 -)
+        # Read name plus mate (64 = first, 128 = second), from every mapped alignment.
+        non_mito=$(samtools view -@ {threads:q} -F 0x804 -e 'rname != "{params.mito}"' {input.bam:q} \
+            | awk '{{ print $1 "\t" int($2 / 64) % 4 }}' \
+            | sort -u -S 2G --parallel {threads:q} -T "$tmp" \
+            | wc -l)
+        awk -v n="$non_mito" -v m="$mito" 'BEGIN {{
+            printf "non_mito_reads\t%d\nmito_reads\t%d\nfrac_mito_reads\t%.6f\n", n, m, m / (n + m)
+        }}' > {output:q}
+        """
+
+
+# ENCODE's annot_enrich: tagAlign lines in each merged region set.
+rule annot_enrich:
+    input:
+        tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
+        dhs=DHS,
+        blacklist=BLACKLIST,
+        promoters=PROMOTERS,
+        enhancers=ENHANCERS,
+    output:
+        f"{OUTDIR}/{{sample}}/annot_enrich/{{sample}}.annot_enrich.qc",
+    log:
+        f"{LOGDIR}/annot_enrich/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/annot_enrich/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        reads=$(python -m zlib_ng.gzip_ng -cd {input.tagalign:q} | wc -l)
+        fraction() {{
+            hits=$(bedtools sort -i "$2" \
+                | bedtools merge -i stdin \
+                | bedtools intersect -u -nonamecheck -a {input.tagalign:q} -b stdin \
+                | wc -l)
+            awk -v name="$1" -v hits="$hits" -v reads="$reads" \
+                'BEGIN {{ printf "%s\t%d\t%.6f\n", name, hits, hits / reads }}'
+        }}
+        {{
+            fraction fraction_of_reads_in_universal_DHS_regions {input.dhs:q}
+            fraction fraction_of_reads_in_blacklist_regions {input.blacklist:q}
+            fraction fraction_of_reads_in_promoter_regions {input.promoters:q}
+            fraction fraction_of_reads_in_enhancer_regions {input.enhancers:q}
+        }} > {output:q}
+        """
+
+
+# ENCODE's GC bias: Picard's metrics, replotted.
+rule gc_bias:
+    input:
+        bam=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
+        fasta=REFERENCE_FASTA,
+    output:
+        metrics=f"{OUTDIR}/{{sample}}/gc_bias/{{sample}}.gc.txt",
+        summary=f"{OUTDIR}/{{sample}}/gc_bias/{{sample}}.gc_summary.txt",
+        plot=f"{OUTDIR}/{{sample}}/gc_bias/{{sample}}.svg",
+        plot_png=f"{OUTDIR}/{{sample}}/gc_bias/{{sample}}.png",
+    params:
+        tmp_dir=TMP_DIR,
+    log:
+        f"{LOGDIR}/gc_bias/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/gc_bias/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        picard -Xmx4g CollectGcBiasMetrics \
+            -R {input.fasta:q} \
+            -I {input.bam:q} \
+            -O {output.metrics:q} \
+            -CHART "$tmp/gc.pdf" \
+            -S {output.summary:q} \
+            -ASSUME_SORTED false \
+            -VERBOSITY ERROR \
+            -QUIET true
+        python workflow/scripts/plot_gc.py --metrics {output.metrics:q} --plot {output.plot:q}
+        """
+
+
+# ENCODE's JSD: deeptools fingerprint metrics on the blacklist-filtered BAM.
+rule jsd:
+    input:
+        bam=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
+        blacklist=BLACKLIST,
+    output:
+        qc=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.jsd.qc",
+        plot=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.svg",
+        plot_png=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.png",
+    params:
+        tmp_dir=TMP_DIR,
+    log:
+        f"{LOGDIR}/jsd/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/jsd/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        bedtools intersect -nonamecheck -v -abam {input.bam:q} -b {input.blacklist:q} > "$tmp/bfilt.bam"
+        samtools index "$tmp/bfilt.bam"
+        plotFingerprint \
+            -b "$tmp/bfilt.bam" \
+            --labels {wildcards.sample:q} \
+            --outQualityMetrics {output.qc:q} \
+            --outRawCounts "$tmp/counts.tab" \
+            --minMappingQuality 30 \
+            --numberOfProcessors {threads:q} \
+            --plotFile "$tmp/fingerprint.png"
+        python workflow/scripts/plot_fingerprint.py \
+            --counts "$tmp/counts.tab" \
+            --title {wildcards.sample:q} \
+            --plot {output.plot:q}
+        """

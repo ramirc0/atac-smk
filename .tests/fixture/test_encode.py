@@ -7,6 +7,8 @@ import pytest
 from conftest import (
     BLACKLIST,
     CHRSZ,
+    FIXTURE,
+    REFS,
     TSS,
     bigwig_stats,
     encode,
@@ -367,3 +369,96 @@ def test_idr_leaves_other_samples_scratch(tmp_path, run):
     done = run_rule(tmp_path, "idr", f"{PREFIX}/idr/S1.idr.txt.gz", files)
     assert done.returncode == 0, done.stderr[-3000:]
     assert scratch.exists()
+
+
+def qc_table(path):
+    """Read a tab-separated ``name<TAB>value...`` QC file into a dict.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        QC file.
+
+    Returns
+    -------
+    dict of str to list of str
+        Fields after the name, per line.
+    """
+    return {r[0]: r[1:] for r in (line.split("\t") for line in lines(path))}
+
+
+def test_annotation_enrichment_matches_encode(run):
+    """Check read fractions in DHS, blacklist, promoter and enhancer regions."""
+    ta = run / "S1/tagalign/S1.tagAlign.gz"
+    regions = [FIXTURE / f"{a}.bed.gz" for a in ("ENCFF304XEX", "ENCFF140XLU")]
+    regions += [FIXTURE / "ENCFF212UAV.bed.gz", BLACKLIST]
+    dhs, prom, enh, bl = (p.name for p in regions)
+    out = encode(
+        "annot_enrich/S1",
+        [ta, *regions],
+        f"python3 $(which encode_task_annot_enrich.py) --ta {ta.name} --dnase {dhs} "
+        f"--blacklist {bl} --prom {prom} --enh {enh}",
+    )
+    ours = qc_table(run / "S1/annot_enrich/S1.annot_enrich.qc")
+    theirs = qc_table(out / "S1.annot_enrich.qc")
+    assert ours.keys() == theirs.keys()
+    for name, (reads, fraction) in theirs.items():
+        assert ours[name][0] == reads
+        assert float(ours[name][1]) == pytest.approx(float(fraction), abs=1e-6)
+
+
+def test_mito_fraction_matches_encode(run):
+    """Check frac_mito against ENCODE's bowtie2 and SAMstats counts."""
+    bam = run / "S1/bowtie2_align/S1.bam"
+    r1, r2 = (run / f"S1/trim/S1_R{i}.fastq.gz" for i in (1, 2))
+    index = sorted((REFS.parent / "bowtie2_build_mito").glob("mito.*.bt2"))
+    out = encode(
+        "frac_mito/S1",
+        [bam, r1, r2, CHRSZ, *index],
+        f"python3 $(which encode_task_post_align.py) {r1.name} {bam.name} "
+        f"--chrsz {CHRSZ.name} --mito-chr-name chrM --nth 8 --mem-gb 8 && "
+        f"bowtie2 -k 5 -X2000 --mm --threads 8 -x mito -1 {r1.name} -2 {r2.name} "
+        "| samtools sort -n -O sam - | SAMstats --sorted_sam_file - --outf mito.qc && "
+        "python3 $(which encode_task_frac_mito.py) non_mito/*.samstats.qc mito.qc",
+    )
+    ours = qc_table(run / "S1/frac_mito/S1.frac_mito.qc")
+    theirs = qc_table(next(out.glob("*.frac_mito.qc")))
+    assert ours["non_mito_reads"] == theirs["non_mito_reads"]
+    assert ours["mito_reads"] == theirs["mito_reads"]
+    ours, theirs = (float(t["frac_mito_reads"][0]) for t in (ours, theirs))
+    assert ours == pytest.approx(theirs, abs=1e-6)
+
+
+def test_gc_bias_matches_encode(run):
+    """Check Picard's normalized coverage per GC bin against ENCODE's run."""
+    bam = run / "S1/filter/S1.bam"
+    fasta = FIXTURE / "genome.fa"
+    out = encode(
+        "gc_bias/S1",
+        [bam, fasta],
+        f"python3 $(which encode_task_gc_bias.py) --nodup-bam {bam.name} "
+        f"--ref-fa {fasta.name} --picard-java-heap 4G",
+    )
+    column = "NORMALIZED_COVERAGE"
+
+    def coverage(path):
+        rows = [x.split("\t") for x in lines(path) if x and not x.startswith("#")]
+        i = rows[0].index(column)
+        return [float(r[i]) for r in rows[1:]]
+
+    ours = coverage(run / "S1/gc_bias/S1.gc.txt")
+    assert ours == pytest.approx(coverage(out / "S1.gc.txt"), rel=1e-6)
+
+
+def test_jsd_matches_encode(run):
+    """Check the deeptools fingerprint metrics against ENCODE's, within 1%."""
+    bam = run / "S1/filter/S1.bam"
+    out = encode(
+        "jsd/S1",
+        [bam, BLACKLIST],
+        f"python3 $(which encode_task_jsd.py) {bam.name} --blacklist {BLACKLIST.name} "
+        "--mapq-thresh 30 --nth 8",
+    )
+    ours = [float(x) for x in lines(run / "S1/jsd/S1.jsd.qc")[1].split("\t")[1:]]
+    theirs = [float(x) for x in lines(next(out.glob("*.jsd.qc")))[0].split("\t")]
+    assert ours == pytest.approx(theirs, rel=0.01)

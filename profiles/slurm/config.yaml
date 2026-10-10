@@ -38,6 +38,11 @@ set-threads:
   plot_idr: 1
   overlap: 1
   frip: 1
+  bowtie2_build_mito: 4
+  frac_mito: 22
+  annot_enrich: 1
+  gc_bias: 1
+  jsd: 8
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp_qc:

@@ -124,6 +124,34 @@ rule bowtie2_build:
         """
 
 
+# For frac_mito: ENCODE aligns every read again, to the mitochondrial contig alone.
+rule bowtie2_build_mito:
+    input:
+        REFERENCE_FASTA,
+    output:
+        MITO_INDEX_FILES,
+    params:
+        prefix=MITO_INDEX,
+        mito=lambda w: config["mito_chr_name"],
+        tmp_dir=TMP_DIR,
+    log:
+        f"{LOGDIR}/bowtie2_build_mito.txt",
+    benchmark:
+        f"{BENCHDIR}/bowtie2_build_mito.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        samtools faidx {input:q} {params.mito:q} > "$tmp/mito.fa"
+        bowtie2-build --threads {threads:q} "$tmp/mito.fa" {params.prefix:q}
+        """
+
+
 # -k is one more than the alignments a read may have, so filter can tell which
 # reads have too many.
 rule bowtie2_align:

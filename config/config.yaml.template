@@ -9,6 +9,9 @@ references:
   fasta: resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
   tss: resources/ENCFF493CCB.bed.gz
   blacklist: resources/ENCFF356LFX.bed.gz
+  dhs: resources/ENCFF304XEX.bed.gz
+  promoters: resources/ENCFF140XLU.bed.gz
+  enhancers: resources/ENCFF212UAV.bed.gz
 
 params:
   multimapping: 4        # alignments a read may have; bowtie2 runs with -k multimapping+1

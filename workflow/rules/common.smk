@@ -23,8 +23,15 @@ if config["params"]["multimapping"] < 1:
 REFERENCE_FASTA = config["references"]["fasta"]
 TSS_REFERENCE = config["references"]["tss"]
 BLACKLIST = config["references"]["blacklist"]
+DHS = config["references"]["dhs"]
+PROMOTERS = config["references"]["promoters"]
+ENHANCERS = config["references"]["enhancers"]
 
 BOWTIE2_INDEX = f"{REFDIR}/bowtie2_build/reference"
+MITO_INDEX = f"{REFDIR}/bowtie2_build_mito/mito"
+MITO_INDEX_FILES = multiext(
+    MITO_INDEX, ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"
+)
 BOWTIE2_INDEX_FILES = multiext(
     BOWTIE2_INDEX,
     ".1.bt2l",

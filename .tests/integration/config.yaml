@@ -9,6 +9,9 @@ references:
   fasta: /data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
   tss: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF493CCB.bed.gz
   blacklist: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF356LFX.bed.gz
+  dhs: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF304XEX.bed.gz
+  promoters: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF140XLU.bed.gz
+  enhancers: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF212UAV.bed.gz
 
 params:
   multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1
