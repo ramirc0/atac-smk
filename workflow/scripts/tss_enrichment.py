@@ -198,9 +198,8 @@ def main(argv=None):
         args.tss,
         separator="\t",
         has_header=False,
-        columns=[0, 1, 2, 5],
-        new_columns=["chrom", "start", "end", "strand"],
-    )
+        new_columns=["chrom", "start", "end", "name", "score", "strand"],
+    ).select("chrom", "start", "end", "strand")
     chromsizes = dict(
         pl.read_csv(args.chromsizes, separator="\t", has_header=False).iter_rows()
     )

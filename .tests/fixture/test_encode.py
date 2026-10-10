@@ -250,8 +250,9 @@ def frip(run, peak_set):
 def test_peaks_match_encode(run):
     """Check MACS3 peak regions against ENCODE's MACS2 call on the same tagAlign.
 
-    MACS3 places some summits of multi-summit regions differently from
-    MACS2 2.2.4, so rows may differ in summit and score. Regions may not.
+    MACS3 3.0.5 fixed summit selection bugs (#741, #747, #748) that MACS2
+    2.2.4 still has, so rows may differ in summit count and position.
+    Regions may not.
     """
     ta = encode_tagalign(run)
     out = encode(
@@ -263,7 +264,6 @@ def test_peaks_match_encode(run):
     )
     ours = lines(run / "S1/peaks/S1.narrowPeak.gz")
     theirs = lines(out / "S1.tn5.pval0.01.300K.narrowPeak.gz")
-    assert len(ours) == len(theirs)
     region = lambda line: tuple(line.split("\t")[:3])
     assert {region(x) for x in ours} == {region(x) for x in theirs}
 

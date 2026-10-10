@@ -3,40 +3,29 @@ name = "atac-smk-envs"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]
 
-# Versions match clarity001/atac-smk:opt, the image that produced the production results.
 [dependencies]
-python = "3.12.*"
-bc = "==1.07.1"
-bedtools = "==2.31.1"
-bowtie2 = "==2.5.4"
-fastp = "==1.0.1"
-htslib = "==1.23"
-macs3 = "==3.0.3"
-mbuffer = "*"
-sambamba = "==1.0.1"
-samtools = "==1.23"
-ucsc-bedclip = "==482"
-ucsc-bedgraphtobigwig = "==482"
-bioframe = "==0.8.0"
+python = ">=3.13"
+bedtools = ">=2.31.1"
+bowtie2 = ">=2.5.5"
+cutadapt = ">=5.2"
+deeptools = ">=4.0"
+fastp = ">=1.4.0"
+macs3 = ">=3.0.5"
+openssl = ">=3.6"
+picard = ">=3.5.0"
+sambamba = ">=1.0.1"
+samtools = ">=1.24"
+ucsc-bedclip = ">=482"
+ucsc-bedgraphtobigwig = ">=482"
 matplotlib = ">=3.11"
-numpy = "==2.4.0"
-pandas = "==2.3.3"
-polars = "==1.36.1"
-pysam = "==0.23.3"
-tqdm = "==4.67.1"
-cutadapt = ">=5.2,<6"
-python-zlib-ng = ">=1.0.0,<2"
-openssl = ">=3.6.5,<4"
-picard = ">=3.5.0,<4"
-scipy = ">=1.18.1,<2"
-deeptools = ">=3.5.6,<4"
+numpy = ">=2.5"
+polars = ">=2.0"
+pysam = ">=0.24.1"
+python-zlib-ng = ">=1.0"
+scipy = ">=1.18"
 
-# The conda oxbow pulls a pyarrow that needs a newer lz4-c than sambamba allows.
 [pypi-dependencies]
-arro3-core = "==0.6.5"
-oxbow = "==0.5.1"
 poikilos = { git = "https://github.com/ramirc0/poikilos" }
-pyarrow = "==22.0.0"
 
 [activation.env]
 # Rule jobs only save figures. Without this, a job that inherits DISPLAY picks a GUI backend.
@@ -44,16 +33,12 @@ MPLBACKEND = "Agg"
 # The image fixed its locale. Pinning one keeps sort order independent of the host.
 LC_ALL = "C"
 
-# IDR needs the Python 3.9 / NumPy 1.19 stack of the conda env it ran in before pixi.
+# idr 2.0.4.2, the last release, needs python <3.10, numpy <1.20 and scipy <1.10.
 [feature.idr.dependencies]
 python = "3.9.*"
-idr = "==2.0.4.2"
-libopenblas = "==0.3.25"
-matplotlib-base = "==3.5.3"
-numpy = "==1.19.5"
-scipy = "==1.9.1"
-ucsc-bedclip = ">=482,<483"
-python-zlib-ng = ">=0.5.1,<0.6"
+idr = ">=2.0.4.2"
+python-zlib-ng = "*"
+ucsc-bedclip = ">=482"
 
 [feature.test.dependencies]
 pytest = "*"

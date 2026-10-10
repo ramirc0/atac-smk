@@ -6,15 +6,20 @@ import sys
 
 import polars as pl
 
-# bedtools bamtobed -bedpe columns ENCODE keys a fragment on.
-KEY = {
-    "column_1": "chrom1",
-    "column_2": "start1",
-    "column_4": "chrom2",
-    "column_6": "end2",
-    "column_9": "strand1",
-    "column_10": "strand2",
-}
+# bedtools bamtobed -bedpe columns, and the six ENCODE keys a fragment on.
+BEDPE = [
+    "chrom1",
+    "start1",
+    "end1",
+    "chrom2",
+    "start2",
+    "end2",
+    "name",
+    "score",
+    "strand1",
+    "strand2",
+]
+KEY = ["chrom1", "start1", "chrom2", "end2", "strand1", "strand2"]
 
 
 def build_parser():
@@ -52,9 +57,7 @@ def library_complexity(bedpe, mito):
         Read pair totals and NRF, PBC1 and PBC2. PBC2 is -1 when no fragment
         is seen exactly twice, and a ratio is 0 when its denominator is 0.
     """
-    counts = (
-        bedpe.filter(pl.col("chrom1") != mito).group_by(list(KEY.values())).len()["len"]
-    )
+    counts = bedpe.filter(pl.col("chrom1") != mito).group_by(KEY).len()["len"]
     total = int(counts.sum())
     distinct = counts.len()
     one = int((counts == 1).sum())
@@ -83,9 +86,9 @@ def main(argv=None):
         sys.stdin.buffer,
         separator="\t",
         has_header=False,
-        columns=list(KEY),
-        schema_overrides={"column_1": pl.String, "column_4": pl.String},
-    ).rename(KEY)
+        new_columns=BEDPE,
+        schema_overrides={"chrom1": pl.String, "chrom2": pl.String},
+    ).select(KEY)
     with open(args.output, "w") as f:
         json.dump(library_complexity(bedpe, args.mito), f, indent=4)
 
