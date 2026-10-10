@@ -27,6 +27,7 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 - Every step reproduces ENCODE ATAC-seq pipeline v2.2.3 (`~/Git_Repos/atac-seq-pipeline`), single-replicate flow. README.md "Differences from ENCODE" lists the deliberate gaps.
 - `.tests/fixture/test_encode.py` checks each step against ENCODE's own task script on the same inputs. A step change MUST keep its test passing.
 - A bug fix starts with a test that fails on the old code.
+- Correctness beats parity. Where ENCODE's tool has a known bug, use the fixed version and list the gap in README.md.
 - Tag `pre-template` is the legacy pipeline. Tag `post-template` is the same outputs on the template layout, the last commit before the ENCODE port.
 
 ## Gotchas
