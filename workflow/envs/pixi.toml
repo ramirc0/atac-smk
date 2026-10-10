@@ -40,6 +40,10 @@ idr = ">=2.0.4.2"
 python-zlib-ng = "*"
 ucsc-bedclip = ">=482"
 
+[feature.idr.activation.env]
+# The idr rule sorts its peaks; the order must not depend on the host locale.
+LC_ALL = "C"
+
 [feature.test.dependencies]
 pytest = "*"
 seqkit = "*"
