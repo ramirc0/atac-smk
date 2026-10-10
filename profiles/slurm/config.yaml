@@ -17,7 +17,7 @@ default-resources:
   runtime: 240m
   mem_mb: 64000 * attempt
   constraint: cascadelake
-  slurm_extra: "--exclude=z[1071,1024] --cpu-freq=High-High:Performance"
+  slurm_extra: "--exclude=z1024 --cpu-freq=High-High:Performance"
 
 set-threads:
   fastp: 8
