@@ -16,6 +16,10 @@ REFDIR = f"{RESULTS}/refs"              # run-independent
 LOGDIR = f"logs/{RUN_ID}"
 BENCHDIR = f"benchmarks/{RUN_ID}"
 TMP_DIR = config["tmp_dir"]
+
+# Only ENCODE's multimapping filter is implemented; its unique-read mode is not.
+if config["params"]["multimapping"] < 1:
+    raise WorkflowError("params.multimapping must be at least 1.")
 REFERENCE_FASTA = config["references"]["fasta"]
 TSS_REFERENCE = config["references"]["tss"]
 

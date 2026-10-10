@@ -1,19 +1,18 @@
-# Reads to a filtered BAM and its tagAlign.
+# Reads to a filtered BAM and its tagAlign, as the ENCODE ATAC-seq pipeline does.
 
 
-rule fastp:
+# Report only: every fastp trim and filter is off. Trimming is the trim rule's job.
+rule fastp_qc:
     input:
         r1=lambda w: R1_OF[w.sample],
         r2=lambda w: R2_OF[w.sample],
     output:
-        r1=f"{OUTDIR}/{{sample}}/fastp/{{sample}}_R1.fastq.gz",
-        r2=f"{OUTDIR}/{{sample}}/fastp/{{sample}}_R2.fastq.gz",
         html=f"{OUTDIR}/{{sample}}/fastp/{{sample}}.html",
         json=f"{OUTDIR}/{{sample}}/fastp/{{sample}}.json",
     log:
-        f"{LOGDIR}/fastp/{{sample}}.txt",
+        f"{LOGDIR}/fastp_qc/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/fastp/{{sample}}.tsv",
+        f"{BENCHDIR}/fastp_qc/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
@@ -23,11 +22,70 @@ rule fastp:
         fastp \
             -i {input.r1:q} \
             -I {input.r2:q} \
-            -o {output.r1:q} \
-            -O {output.r2:q} \
+            --disable_adapter_trimming \
+            --disable_quality_filtering \
+            --disable_length_filtering \
+            --disable_trim_poly_g \
             -h {output.html:q} \
             -j {output.json:q} \
-            -w {threads:q}
+            -w {threads}
+        """
+
+
+# ENCODE's detect_adapter.py picks the adapter seen most often in a mate's first
+# 250,000 reads, ties in Illumina, Nextera, smallRNA order. Without an adapter in
+# both mates, ENCODE leaves the reads untrimmed.
+rule trim:
+    input:
+        r1=lambda w: R1_OF[w.sample],
+        r2=lambda w: R2_OF[w.sample],
+    output:
+        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
+        r2=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R2.fastq.gz",
+        json=f"{OUTDIR}/{{sample}}/trim/{{sample}}.cutadapt.json",
+    log:
+        f"{LOGDIR}/trim/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/trim/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        detect() {{
+            awk 'NR % 4 == 2 {{
+                    if (index($0, "AGATCGGAAGAGC")) illumina++
+                    if (index($0, "CTGTCTCTTATA")) nextera++
+                    if (index($0, "TGGAATTCTCGG")) smallrna++
+                }}
+                END {{
+                    if (illumina > 0 && illumina >= nextera && illumina >= smallrna) print "AGATCGGAAGAGC"
+                    else if (nextera > 0 && nextera >= smallrna) print "CTGTCTCTTATA"
+                    else if (smallrna > 0) print "TGGAATTCTCGG"
+                }}' <(zcat -f "$1" | head -n 1000000)
+        }}
+        adapter1=$(detect {input.r1:q})
+        adapter2=$(detect {input.r2:q})
+        echo "adapters: R1 '$adapter1', R2 '$adapter2'"
+
+        if [[ -n "$adapter1" && -n "$adapter2" ]]; then
+            cutadapt \
+                -j {threads} \
+                -e 0.1 \
+                -m 5 \
+                -a "$adapter1" \
+                -A "$adapter2" \
+                --json {output.json:q} \
+                -o {output.r1:q} \
+                -p {output.r2:q} \
+                {input.r1:q} \
+                {input.r2:q}
+        else
+            cp {input.r1:q} {output.r1:q}
+            cp {input.r2:q} {output.r2:q}
+            echo '{{}}' > {output.json:q}
+        fi
         """
 
 
@@ -46,7 +104,7 @@ rule bowtie2_build:
     log:
         f"{LOGDIR}/bowtie2_build.txt",
     benchmark:
-        f"{BENCHDIR}/bowtie2_build.tsv",
+        f"{BENCHDIR}/bowtie2_build.tsv"
     software:
         SOFTWARE_ENV
     shell:
@@ -66,109 +124,148 @@ rule bowtie2_build:
         """
 
 
+# -k is one more than the alignments a read may have, so filter can tell which
+# reads have too many.
 rule bowtie2_align:
     input:
         index=BOWTIE2_INDEX_FILES,
-        r1=f"{OUTDIR}/{{sample}}/fastp/{{sample}}_R1.fastq.gz",
-        r2=f"{OUTDIR}/{{sample}}/fastp/{{sample}}_R2.fastq.gz",
+        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
+        r2=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R2.fastq.gz",
     output:
         bam=f"{OUTDIR}/{{sample}}/bowtie2_align/{{sample}}.bam",
         flagstat=f"{OUTDIR}/{{sample}}/bowtie2_align/{{sample}}.flagstat.json",
     params:
-        k=lambda w: config["params"]["k"],
+        k=lambda w: config["params"]["multimapping"] + 1,
         index=BOWTIE2_INDEX,
         tmp_dir=TMP_DIR,
     log:
         f"{LOGDIR}/bowtie2_align/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/bowtie2_align/{{sample}}.tsv",
+        f"{BENCHDIR}/bowtie2_align/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
         bowtie2 \
+            -k {params.k:q} \
             -X 2000 \
             --mm \
-            -k {params.k:q} \
             --threads {threads:q} \
             -x {params.index:q} \
             -1 {input.r1:q} \
             -2 {input.r2:q} \
-            | samtools view -@ {threads:q} -S -1 -b /dev/stdin \
             | samtools sort \
                 -m 1536M \
                 -@ {threads:q} \
-                -T {params.tmp_dir:q}/{wildcards.sample:q}.$$ \
+                -T "$tmp/sort" \
                 -o {output.bam:q}
         samtools index -@ {threads:q} {output.bam:q}
         samtools flagstat -@ {threads:q} --output-fmt json {output.bam:q} > {output.flagstat:q}
         """
 
 
-# -F excludes flag bits: 4 unmapped, 8 mate unmapped, 256 secondary, 512 failed QC,
-# 1024 duplicate (1804 in total). -f 2 keeps proper pairs.
+# ENCODE's paired-end filter with multimapping on. No MAPQ cutoff: reads with up to
+# --multimapping alignments keep their primary one, and read names with more are
+# dropped, as assign_multimappers.py does. That script also drops the last read
+# name; this does not. -F 524 drops unmapped, mate unmapped and QC fail reads.
+# -F 1804 adds secondary and duplicate. -f 2 keeps proper pairs.
 rule filter:
     input:
         f"{OUTDIR}/{{sample}}/bowtie2_align/{{sample}}.bam",
     output:
         bam=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
+        bai=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam.bai",
         flagstat=f"{OUTDIR}/{{sample}}/filter/{{sample}}.flagstat.json",
+        nmsrt=temp(f"{OUTDIR}/{{sample}}/filter/{{sample}}.nmsrt.bam"),
     params:
-        exclude_flag=lambda w: config["params"]["samtools_exclude_flag"],
-        include_flag=lambda w: config["params"]["samtools_include_flag"],
+        max_lines=lambda w: 2 * config["params"]["multimapping"],
+        mito=lambda w: config["mito_chr_name"],
+        tmp_dir=TMP_DIR,
     log:
         f"{LOGDIR}/filter/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/filter/{{sample}}.tsv",
+        f"{BENCHDIR}/filter/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
-        sambamba markdup -t {threads:q} {input:q} /dev/stdout \
-            | samtools view -@ {threads:q} -F {params.exclude_flag:q} -f {params.include_flag:q} -q 30 -h -u /dev/stdin \
-            | samtools sort -m 1536M -@ {threads:q} -n /dev/stdin \
-            | mbuffer -m 1G \
-            | samtools fixmate -@ {threads:q} -r /dev/stdin /dev/stdout \
-            | samtools view -@ {threads:q} -F {params.exclude_flag:q} -f {params.include_flag:q} -h -u /dev/stdin \
-            | samtools sort -m 1536M -@ {threads:q} /dev/stdin \
-            | mbuffer -m 1G \
-            | samtools view -@ {threads:q} -h \
-            | grep -v "chrM" \
-            | samtools view -@ {threads:q} -b \
-            > {output.bam:q}
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
 
-        samtools quickcheck -v {output.bam:q}
+        samtools view -@ {threads:q} -u -F 524 -f 2 {input:q} \
+            | samtools sort -@ {threads:q} -m 1536M -n -u -T "$tmp/nmsrt" - \
+            | samtools view -h - \
+            | awk -v max={params.max_lines:q} '
+                /^@/ {{ print; next }}
+                $1 != name {{ if (n <= max) printf "%s", group; name = $1; n = 0; group = "" }}
+                {{ n++; group = group $0 "\n" }}
+                END {{ if (n <= max) printf "%s", group }}' \
+            | samtools fixmate -@ {threads:q} -r -u - - \
+            | samtools view -@ {threads:q} -1 -F 1804 -f 2 -o {output.nmsrt:q} -
+        samtools sort -@ {threads:q} -m 1536M -l 1 -T "$tmp/sort" -o "$tmp/filt.bam" {output.nmsrt:q}
+        # ENCODE's sizes. They change which copy of a duplicate survives.
+        sambamba markdup \
+            -t {threads:q} \
+            --tmpdir "$tmp" \
+            --hash-table-size=17592186044416 \
+            --overflow-list-size=20000000 \
+            --io-buffer-size=256 \
+            "$tmp/filt.bam" \
+            "$tmp/dupmark.bam"
+        samtools view \
+            -@ {threads:q} \
+            -b \
+            -F 1804 \
+            -f 2 \
+            -e 'rname != "{params.mito}"' \
+            -o {output.bam:q} \
+            "$tmp/dupmark.bam"
         samtools index -@ {threads:q} {output.bam:q}
         samtools flagstat -@ {threads:q} --output-fmt json {output.bam:q} > {output.flagstat:q}
         """
 
 
-rule bam_to_tagalign:
+# ENCODE's bam2ta: one line per mate, mate 1 first, in name order. Tn5 shift: +4 on
+# the + strand, -5 on the - strand, clamped to at least 1 bp.
+rule tagalign:
     input:
         f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
     output:
-        bedpe=f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.bedpe",
-        tagalign=f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign.gz",
+        tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
+        bedpe=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.bedpe",
     params:
-        # The script gzips this file into the tagalign output.
-        tagalign=f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign",
+        tmp_dir=TMP_DIR,
     log:
-        f"{LOGDIR}/bam_to_tagalign/{{sample}}.txt",
+        f"{LOGDIR}/tagalign/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/bam_to_tagalign/{{sample}}.tsv",
+        f"{BENCHDIR}/tagalign/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/bam_to_tagalign.py \
-            --bam {input:q} \
-            --bedpe {output.bedpe:q} \
-            --tagalign {params.tagalign:q} \
-            --threads {threads:q}
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        samtools sort -@ {threads:q} -m 1536M -n -u -T "$tmp/nmsrt" {input:q} \
+            | bedtools bamtobed -bedpe -mate1 -i stdin \
+            | tee {output.bedpe:q} \
+            | awk '
+                function tag(chrom, start, end, strand) {{
+                    if (strand == "+") start += 4
+                    else if (strand == "-") end -= 5
+                    if (start >= end) {{ if (strand == "+") start = end - 1; else end = start + 1 }}
+                    print chrom "\t" start "\t" end "\tN\t1000\t" strand
+                }}
+                {{ tag($1, $2, $3, $9); tag($4, $5, $6, $10) }}' \
+            | python -m zlib_ng.gzip_ng -cn \
+            > {output.tagalign:q}
         """

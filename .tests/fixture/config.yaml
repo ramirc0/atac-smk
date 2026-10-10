@@ -2,6 +2,7 @@ samples: .tests/fixture/samples.tsv
 outdir: results-fixture  # own refs/, so the chr21 index never replaces the GRCh38 one
 pixi_env: default
 run_id: fixture
+mito_chr_name: chrM
 tmp_dir: .tmp
 
 references:
@@ -9,8 +10,6 @@ references:
   tss: resources/fixture/ENCFF493CCB.bed.gz
 
 params:
-  k: 4
+  multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1
   q: 0.05
   p: 0.01
-  samtools_exclude_flag: 1804
-  samtools_include_flag: 2

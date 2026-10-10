@@ -20,12 +20,13 @@ default-resources:
   slurm_extra: "--exclude=z1024 --cpu-freq=High-High:Performance"
 
 set-threads:
-  fastp: 8
+  fastp_qc: 8
+  trim: 8
   bowtie2_build: 22
   bowtie2_align: 22
   pbc_qc: 16
   filter: 22
-  bam_to_tagalign: 22
+  tagalign: 22
   macs3_signal: 22
   bedgraphtobigwig: 4
   macs3_fold_change_signal: 4
@@ -41,7 +42,7 @@ set-threads:
   overlap_peaks_abc: 4
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
-  fastp:
+  fastp_qc:
     mem_mb: 32000 * attempt
   bowtie2_align:
     slurm_partition: 12hours

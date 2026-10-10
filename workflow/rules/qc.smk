@@ -1,11 +1,14 @@
 # Library and signal QC metrics.
 
 
+# ENCODE's library complexity, on the filtered reads before duplicate removal.
 rule pbc_qc:
     input:
-        f"{OUTDIR}/{{sample}}/bowtie2_align/{{sample}}.bam",
+        f"{OUTDIR}/{{sample}}/filter/{{sample}}.nmsrt.bam",
     output:
         f"{OUTDIR}/{{sample}}/pbc_qc/{{sample}}.pbc.json",
+    params:
+        mito=lambda w: config["mito_chr_name"],
     log:
         f"{LOGDIR}/pbc_qc/{{sample}}.txt",
     benchmark:
@@ -16,9 +19,8 @@ rule pbc_qc:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/pbc_qc.py \
-            --bam {input:q} \
-            --output {output:q}
+        bedtools bamtobed -bedpe -i {input:q} \
+            | python workflow/scripts/pbc_qc.py --mito {params.mito:q} --output {output:q}
         """
 
 
@@ -74,7 +76,7 @@ rule tss_enrichment:
 
 rule frip_all:
     input:
-        tagalign=f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign.gz",
+        tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
         peaks=f"{OUTDIR}/{{sample}}/macs3_callpeak/{{sample}}_peaks.narrowPeak",
     output:
         f"{OUTDIR}/{{sample}}/frip_all/{{sample}}.txt",

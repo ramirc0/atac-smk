@@ -3,7 +3,7 @@
 
 rule macs3_callpeak:
     input:
-        f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign.gz",
+        f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
     output:
         f"{OUTDIR}/{{sample}}/macs3_callpeak/{{sample}}_peaks.narrowPeak",
     params:
@@ -35,7 +35,7 @@ rule macs3_callpeak:
 
 rule pseudoreps:
     input:
-        f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.bedpe",
+        f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.bedpe",
     output:
         pseudorep1=f"{OUTDIR}/{{sample}}/pseudoreps/{{sample}}_pseudorep1.tagalign",
         pseudorep2=f"{OUTDIR}/{{sample}}/pseudoreps/{{sample}}_pseudorep2.tagalign",

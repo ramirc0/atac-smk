@@ -49,6 +49,7 @@ rule all:
     input:
         expand(
             [
+                f"{OUTDIR}/{{sample}}/fastp/{{sample}}.html",
                 f"{OUTDIR}/{{sample}}/pbc_qc/{{sample}}.pbc.json",
                 f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}.bigWig",
                 f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}_FE.bw",

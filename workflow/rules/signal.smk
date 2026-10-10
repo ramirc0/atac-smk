@@ -3,7 +3,7 @@
 
 rule macs3_signal:
     input:
-        f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign.gz",
+        f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
     output:
         bedgraph=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
         control_lambda=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_control_lambda.bdg",
@@ -100,7 +100,7 @@ rule macs3_fold_change_signal:
 
 rule macs3_pvalue_signal:
     input:
-        tagalign=f"{OUTDIR}/{{sample}}/bedpe_tagalign/{{sample}}.tagalign.gz",
+        tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
         treat_pileup=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
         control_lambda=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_control_lambda.bdg",
         chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",

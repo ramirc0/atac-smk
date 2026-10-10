@@ -1,10 +1,20 @@
-"""Compute library complexity (PBC1, PBC2, NRF) from an aligned BAM."""
+"""Compute library complexity (NRF, PBC1, PBC2) from BEDPE read pairs, as ENCODE does."""
 
 import argparse
 import json
+import sys
 
-import oxbow
 import polars as pl
+
+# bedtools bamtobed -bedpe columns ENCODE keys a fragment on.
+KEY = {
+    "column_1": "chrom1",
+    "column_2": "start1",
+    "column_4": "chrom2",
+    "column_6": "end2",
+    "column_9": "strand1",
+    "column_10": "strand2",
+}
 
 
 def build_parser():
@@ -15,16 +25,53 @@ def build_parser():
     argparse.ArgumentParser
         Parser for the pbc_qc.py flags.
     """
-    p = argparse.ArgumentParser(description="Compute PBC1, PBC2 and NRF.")
-    p.add_argument("--bam", required=True, help="Aligned BAM.")
-    p.add_argument(
-        "--output", required=True, help="JSON of PBC1, PBC2 and NRF to write."
-    )
+    p = argparse.ArgumentParser(description="Compute NRF, PBC1 and PBC2.")
+    p.add_argument("--mito", default="chrM", help="Mitochondrial contig to skip.")
+    p.add_argument("--output", required=True, help="JSON to write.")
     return p
 
 
+def library_complexity(bedpe, mito):
+    """Count fragments by position and derive ENCODE's complexity metrics.
+
+    A fragment is keyed on its first end's contig and start, its second end's
+    contig and end, and both strands. Pairs whose first end is on ``mito``
+    are skipped.
+
+    Parameters
+    ----------
+    bedpe : polars.DataFrame
+        Columns ``chrom1``, ``start1``, ``chrom2``, ``end2``, ``strand1`` and
+        ``strand2``, one row per read pair.
+    mito : str
+        Mitochondrial contig.
+
+    Returns
+    -------
+    dict of str to float
+        Read pair totals and NRF, PBC1 and PBC2. PBC2 is -1 when no fragment
+        is seen exactly twice, and a ratio is 0 when its denominator is 0.
+    """
+    counts = (
+        bedpe.filter(pl.col("chrom1") != mito).group_by(list(KEY.values())).len()["len"]
+    )
+    total = int(counts.sum())
+    distinct = counts.len()
+    one = int((counts == 1).sum())
+    two = int((counts == 2).sum())
+    return {
+        "total_read_pairs": total,
+        "distinct_read_pairs": distinct,
+        "one_read_pair": one,
+        "two_read_pairs": two,
+        "NRF": distinct / total if total else 0.0,
+        "PBC1": one / distinct if distinct else 0.0,
+        "PBC2": one / two if two else -1.0,
+    }
+
+
 def main(argv=None):
-    """Count read pairs by position and write the library complexity metrics.
+    """Read BEDPE from stdin and write the complexity metrics as JSON.
 
     Parameters
     ----------
@@ -32,95 +79,15 @@ def main(argv=None):
         Command-line arguments. Defaults to `sys.argv[1:]`.
     """
     args = build_parser().parse_args(argv)
-
-    bed_cols = ["chrom", "start", "end", "name", "score", "strand"]
-    agg_cols = ["chrom", "start", "end", "strand"]
-
-    bam_file = oxbow.from_bam(args.bam).to_polars(lazy=True)
-    assert isinstance(bam_file, pl.LazyFrame)
-    bed_lf = (
-        bam_file.with_columns(
-            pl.col("rname").alias("chrom"),
-            pl.col("pos").alias("start"),
-            (pl.col("pos") + pl.col("seq").str.len_chars()).alias("end"),
-            pl.col("mapq").alias("score"),
-            pl.col("qname").alias("name"),
-            pl.when((pl.col("flag") & 16) == 0)
-            .then(pl.lit("+"))
-            .otherwise(pl.lit("-"))
-            .alias("strand"),
-        )
-        .select(bed_cols + ["flag"])
-        .filter(
-            ~((pl.col("chrom") == "chrM") | (pl.col("chrom").cat.starts_with("chrUn"))),
-            # Hardcodes the filter rule's default samtools flags.
-            (((pl.col("flag") & 1804) == 0) & ((pl.col("flag") & 2) != 0)),
-            (pl.col("score") >= 30),
-        )
-        .group_by("name")
-        .agg(
-            [
-                pl.col(col).filter((pl.col("flag") & 64) == 64).first().alias(col)
-                for col in agg_cols
-            ]
-            + [
-                pl.col(col)
-                .filter((pl.col("flag") & 128) == 128)
-                .first()
-                .alias(col + "_")
-                for col in agg_cols
-            ]
-            + [pl.col("score").first()]
-        )
-        .select(
-            [
-                "chrom",
-                "start",
-                "end",
-                "chrom_",
-                "start_",
-                "end_",
-                "name",
-                "score",
-                "strand",
-                "strand_",
-            ]
-        )
-        .sort("name")
-    )
-
-    bed_df = bed_lf.collect()
-    uniq_counts = bed_df.with_columns(
-        pl.concat_str(["chrom", "start", "end", "chrom_", "start_", "end_"]).alias(
-            "uniq"
-        )
-    )["uniq"].value_counts()
-
-    no_total_reads = uniq_counts["count"].sum()
-    no_distict_reads = uniq_counts.height
-    no_unique_reads = uniq_counts.filter(pl.col("count") == 1).height
-    no_reads_seen_twice = uniq_counts.filter(pl.col("count") == 2).height
-
-    print(f"Total reads: {no_total_reads}")
-    print(f"Distinct reads: {no_distict_reads}")
-    print(f"Unique reads: {no_unique_reads}")
-    print(f"Reads seen twice: {no_reads_seen_twice}")
-
-    PBC1 = no_unique_reads / no_distict_reads
-    if no_reads_seen_twice != 0:
-        PBC2 = no_unique_reads / no_reads_seen_twice
-    else:
-        PBC2 = float("inf")
-    NRF = no_distict_reads / no_total_reads
-
-    print(f"PBC1: {PBC1}")
-    print(f"PBC2: {PBC2}")
-    print(f"NRF: {NRF}")
-
+    bedpe = pl.read_csv(
+        sys.stdin.buffer,
+        separator="\t",
+        has_header=False,
+        columns=list(KEY),
+        schema_overrides={"column_1": pl.String, "column_4": pl.String},
+    ).rename(KEY)
     with open(args.output, "w") as f:
-        json.dump({"PBC1": PBC1, "PBC2": PBC2, "NRF": NRF}, f, indent=4)
-
-    print("Wrote QC metrics to ", args.output)
+        json.dump(library_complexity(bedpe, args.mito), f, indent=4)
 
 
 if __name__ == "__main__":

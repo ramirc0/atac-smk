@@ -143,7 +143,7 @@ def test_library_complexity_matches_encode(run):
 
 def test_tagalign_matches_encode(run):
     """Check that the tagAlign has ENCODE's lines in ENCODE's order."""
-    ours = lines(run / "S1/bedpe_tagalign/S1.tagalign.gz")
+    ours = lines(run / "S1/tagalign/S1.tagAlign.gz")
     assert first_difference(ours, lines(encode_tagalign(run))) is None
 
 
@@ -183,7 +183,7 @@ def test_idr_matches_encode(run):
         run / f"S1/macs3_pseudoreps/S1_pseudorep{i}_peaks.narrowPeak" for i in (1, 2)
     )
     peaks = run / "S1/macs3_callpeak/S1_peaks.narrowPeak"
-    ta = run / "S1/bedpe_tagalign/S1.tagalign.gz"
+    ta = run / "S1/tagalign/S1.tagAlign.gz"
     out = encode(
         "idr/S1",
         [pr1, pr2, peaks, ta, CHRSZ, BLACKLIST],
@@ -200,7 +200,7 @@ def test_idr_matches_encode(run):
 def test_tss_enrichment_matches_encode(run):
     """Check the TSS enrichment score against ENCODE's metaseq code on the same BAM."""
     bam = run / "S1/filter/S1.bam"
-    n = read_length(run / "S1/fastp/S1_R1.fastq.gz")
+    n = read_length(run / "S1/trim/S1_R1.fastq.gz")
     out = encode(
         "tss/S1",
         [bam, CHRSZ, TSS],
@@ -232,8 +232,8 @@ def test_tagalign_job_fails_on_a_corrupt_bam(tmp_path):
     """Check that a corrupt BAM fails the tagAlign job instead of leaving empty files."""
     done = run_rule(
         tmp_path,
-        "bam_to_tagalign",
-        f"{PREFIX}/bedpe_tagalign/S1.tagalign.gz",
+        "tagalign",
+        f"{PREFIX}/tagalign/S1.tagAlign.gz",
         {f"{PREFIX}/filter/S1.bam": b"not a BAM"},
     )
     assert done.returncode != 0
@@ -246,9 +246,7 @@ def test_frip_job_fails_on_unreadable_peaks(tmp_path, run):
         "frip_all",
         f"{PREFIX}/frip_all/S1.txt",
         {
-            f"{PREFIX}/bedpe_tagalign/S1.tagalign.gz": (
-                run / "S1/bedpe_tagalign/S1.tagalign.gz"
-            ),
+            f"{PREFIX}/tagalign/S1.tagAlign.gz": (run / "S1/tagalign/S1.tagAlign.gz"),
             f"{PREFIX}/macs3_callpeak/S1_peaks.narrowPeak": b"chr21\tnot\ta peak\n",
         },
     )
