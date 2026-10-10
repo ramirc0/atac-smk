@@ -96,3 +96,4 @@ wildcard_constraints:
     pr=r"pr[12]",
     # Any peak file but a filtered one, so blacklist_filter never chains.
     path=r"[^/]+/[^/]+(?<!\.bfilt)",
+    track=r"fc|pval|pileup",
