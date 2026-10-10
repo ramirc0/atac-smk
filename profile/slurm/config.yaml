@@ -1,9 +1,6 @@
 executor: slurm
 jobs: unlimited
 
-resources:
-  chrombpnet_jobs: 28
-
 set-resources:
   fastp:
     runtime: 240m
@@ -157,44 +154,12 @@ set-resources:
     threads: 4
     cpus_per_task: 4
     mem: 64000MB
-  # chrombpnet_prep_nonpeaks:
-  #   slurm_partition: "gpu,gpuh200"
-  #   chrombpnet_jobs: 1
-  #   runtime: 1440
-  #   mem: 86000MB
-  #   cpus_per_task: 8
-  #   slurm_extra: "--gres=gpu:1"
-  #   apptainer-args: -B /zata,/data --nv
-  # chrombpnet_bias:
-  #   slurm_partition: "gpu,gpuh200"
-  #   chrombpnet_jobs: 1
-  #   runtime: 1440
-  #   mem: 86000MB
-  #   cpus_per_task: 8
-  #   slurm_extra: "--gres=gpu:1"
-  #   apptainer-args: -B /zata,/data --nv
-  # choose_best_bias_model:
-  #   slurm_partition: "30mins"
-  #   runtime: 30
-  #   mem: 16000MB
-  #   cpus_per_task: 2
-  #   apptainer-args: -B /zata,/data
-  # chrombpnet_full:
-  #   slurm_partition: "gpu,gpuh200"
-  #   chrombpnet_jobs: 1
-  #   runtime: 1440
-  #   mem: 86000MB
-  #   cpus_per_task: 8
-  #   slurm_extra: "--gres=gpu:1"
-  #   apptainer-args: -B /zata,/data --nv
 
 use-apptainer: True
 use-conda: True
 apptainer-prefix: workflow/rules/envs
 conda-prefix: workflow/rules/envs
 apptainer-args: -B /data
-# # w/ GPU
-# apptainer-args: -B /zata,/data --nv
 
 # Debug
 printshellcmds: True

@@ -1,8 +1,5 @@
 resources:
   tss_reference: "resources/ENCFF493CCB.bed"
-  blacklist: "resources/hg38.blacklist.bed"
-  chrombpnet_config_json: "resources/fold_0.json"
-  chrombpnet_bias_model: "resources/ENCSR868FGK_bias_fold_0.h5"
   reference_fasta: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
   reference_chromsizes: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.chromsizes"
 
@@ -12,8 +9,6 @@ params:
   p: 0.01
   samtools_exclude_flag: 1804
   samtools_include_flag: 2
-  # # chrombpnet
-  # bias_threshold_factor: 0.5
 
 input:
   sample_map: "MOHD.sample_map.tsv"
@@ -21,5 +16,4 @@ input:
 
 environments:
   custom: "docker://clarity001/atac-smk:latest"
-  chrombpnet: "docker://clarity001/chrombpnet:latest"
   idr: "environments/idr.yaml"

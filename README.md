@@ -16,7 +16,6 @@ You will also need the following reference files placed in a `resources/` direct
 
 - GRCh38 reference genome FASTA (no-alt analysis set)
 - Reference genome index (`.fai`) and chromosome sizes
-- ENCODE blacklist regions BED file
 - TSS reference BED file (e.g., `ENCFF493CCB.bed`)
 
 ### Dependencies
@@ -74,12 +73,11 @@ input:
 ```yaml
 resources:
   tss_reference: "resources/ENCFF493CCB.bed"
-  blacklist: "resources/hg38.blacklist.bed"
   reference_fasta: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta"
   reference_chromsizes: "resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.chromsizes"
 ```
 
-These are paths to the reference genome and annotation files required by the pipeline. The blacklist and TSS reference are used for QC metrics.
+These are paths to the reference genome and annotation files required by the pipeline. The TSS reference is used for QC metrics.
 
 #### Parameters
 
@@ -229,7 +227,6 @@ The pipeline includes several custom Python scripts located in `workflow/rules/s
 - **`calculate_frip.py`** — Computes the Fraction of Reads in Peaks using bedtools.
 - **`bedpe_to_pseudoreps.py`** — Splits a BEDPE file into two pseudoreplicate tagAlign files by random shuffling.
 - **`overlap_peaks_abc.py`** — Identifies peaks with ≥ 50% reciprocal overlap across pseudoreplicates using `bioframe`.
-- **`run_multiqc.py`** — Aggregates QC outputs into a MultiQC report (WIP, not currently wired into the Snakefile).
 
 ## References
 

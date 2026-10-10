@@ -55,11 +55,6 @@ if SLACK_WEBHOOK_URL:
 else:
   print("SLACK_WEBHOOK_URL not found")
 
-# # WIP
-# include: "workflow/rules/chrombpnet.0.smk"
-# include: "workflow/rules/chrombpnet.1.smk"
-# include: "workflow/rules/chrombpnet.2.smk"
-
 wildcard_constraints:
     pseudorep=r"pseudorep(1|2)",
 
@@ -119,26 +114,5 @@ rule all:
         # Overlap peaks
         expand("results/overlap_peaks/{sample}.ok", sample=SAMPLES),
         
-        # Overlap peaks (ABC method) 
+        # Overlap peaks (ABC method)
         expand("results/overlap_peaks_abc/{sample}.ok", sample=SAMPLES),
-
-        # # WIP
-        # expand(
-        #     [
-        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_prep_nonpeaks.continue",
-        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_bias.continue",
-        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_full.continue"
-        #     ],
-        #     sample=SAMPLES,
-        #     genome=GENOMES
-        # ),
-        # "results/chrombpnet/best_bias_model.h5",
-        # "results/chrombpnet/best_bias_metrics.json",
-        # expand(
-        #     [
-        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_prep_nonpeaks.continue",
-        #         "results/chrombpnet/{sample}.{genome}/chrombpnet_full.continue"
-        #     ],
-        #     sample=SAMPLES,
-        #     genome=GENOMES
-        # ),
