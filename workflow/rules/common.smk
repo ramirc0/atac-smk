@@ -1,43 +1,84 @@
-from pathlib import Path
-from dotenv import load_dotenv
-import polars as pl
-import math
-import glob
-import sys
-import os
+# Config, sample sheet, and shared helpers.
 
-load_dotenv()
+from pathlib import Path
+
+import polars as pl
+from snakemake.exceptions import WorkflowError
+
+
+configfile: "config/config.yaml"
+
+
+RESULTS = config["outdir"]
+RUN_ID = config.get("run_id", "default")
+OUTDIR = f"{RESULTS}/{RUN_ID}"          # per-run
+REFDIR = f"{RESULTS}/refs"              # run-independent
+LOGDIR = f"logs/{RUN_ID}"
+BENCHDIR = f"benchmarks/{RUN_ID}"
+TMP_DIR = config["tmp_dir"]
+REFERENCE_FASTA = config["references"]["fasta"]
+TSS_REFERENCE = config["references"]["tss"]
+
+BOWTIE2_INDEX = f"{REFDIR}/bowtie2_build/reference"
+BOWTIE2_INDEX_FILES = multiext(
+    BOWTIE2_INDEX,
+    ".1.bt2l",
+    ".2.bt2l",
+    ".3.bt2l",
+    ".4.bt2l",
+    ".rev.1.bt2l",
+    ".rev.2.bt2l",
+)
 
 # The workspace path is relative to the rule file. Every rule file sits in rules/.
 SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
 IDR_ENV = pixi(workspace="../envs", env="idr", locked=True)
 
-Path(config["input"]["tmp_dir"]).mkdir(parents=True, exist_ok=True)
-sample_map_df = pl.read_csv(config["input"]["sample_map"], separator="\t", comment_prefix="#")
-SAMPLES = sample_map_df["mohd_accession"].to_list()
-read1 = sample_map_df["r1"].to_list()
-read2 = sample_map_df["r2"].to_list()
-FIRST_SAMPLE = read1[0]
-READ_LOOKUP = dict(zip(SAMPLES, zip(read1, read2)))
+# samtools sort -T and IDR write here, so it must exist before any job runs.
+Path(TMP_DIR).mkdir(parents=True, exist_ok=True)
 
-def get_fastqs(wildcards):
-    r1, r2 = READ_LOOKUP[wildcards.sample]
-    return {"r1": r1, "r2": r2}
 
-ATTEMPT_MODIFIERS = {
-    1: {"slurm_partition": "4hours", "runtime": 240, "mem_mb_multiplier": 1.0},
-    2: {"slurm_partition": "12hours", "runtime": 720, "mem_mb_multiplier": 1.5},
-    3: {"slurm_partition": "5days", "runtime": 7200, "mem_mb_multiplier": 2.0},
-}
+_SHEET = Path(config["samples"])
+if not _SHEET.exists():
+    raise WorkflowError(
+        f"Sample sheet not found: {_SHEET}\n"
+        "Columns: sample_id, r1, r2; see config/samples.example.tsv."
+    )
 
-def get_rsources(wildcards, attempt, input):
-    attempt_modifiers = ATTEMPT_MODIFIERS[attempt]
-    mem = int(attempt_modifiers["mem_mb_multiplier"]) * input.resources.mem_mb
+# All-string read so empty cells are "" (absent), not a type error.
+_manifest = pl.read_csv(_SHEET, separator="\t", infer_schema_length=0, comment_prefix="#")
+
+
+def _column(name):
+    """Map each sample to its value in sheet column `name`.
+
+    Parameters
+    ----------
+    name : str
+        Sample sheet column.
+
+    Returns
+    -------
+    dict of str to str or None
+        Value per `sample_id`, with empty cells as None. Empty when the sheet
+        has no such column.
+    """
+    if name not in _manifest.columns:
+        return {}
     return {
-        "slurm_partition": attempt_modifiers["slurm_partition"],
-        "runtime": attempt_modifiers["runtime"],
-        "mem": f"{mem}MB",
+        row["sample_id"]: (row[name] or None)
+        for row in _manifest.iter_rows(named=True)
     }
 
-def get_macs3_pseudoreps_signal(wildcards):
-    return expand(rules.macs3_pseudoreps.output.signal, sample=[wildcards.sample],pseudorep=["pseudorep1","pseudorep2"])
+
+SAMPLES = _manifest.get_column("sample_id").to_list()
+R1_OF = _column("r1")
+R2_OF = _column("r2")
+
+if not SAMPLES:
+    raise WorkflowError(f"Sample sheet {_SHEET} has no rows.")
+
+
+wildcard_constraints:
+    sample=r"[A-Za-z0-9][A-Za-z0-9_.-]*",
+    pseudorep=r"pseudorep(1|2)",

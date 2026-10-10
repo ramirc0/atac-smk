@@ -1,0 +1,63 @@
+executor: slurm
+software-deployment-method:
+  - pixi
+# Snakemake copies every env package here. pixi installs from its own cache.
+# One copy per user instead of one per workdir.
+software-deployment-cache-prefix: ~/.cache/snakemake/software
+
+jobs: unlimited
+max-jobs-per-second: 5
+
+slurm-efficiency-report: true
+slurm-efficiency-report-path: logs/efficiency
+slurm-efficiency-threshold: 0.8
+
+default-resources:
+  slurm_partition: 4hours
+  runtime: 240m
+  mem_mb: 64000 * attempt
+  constraint: cascadelake
+  slurm_extra: "--exclude=z[1071,1024] --cpu-freq=High-High:Performance"
+
+set-threads:
+  fastp: 8
+  bowtie2_build: 22
+  bowtie2_align: 22
+  pbc_qc: 16
+  filter: 22
+  bam_to_tagalign: 22
+  macs3_signal: 22
+  bedgraphtobigwig: 4
+  macs3_fold_change_signal: 4
+  macs3_pvalue_signal: 4
+  macs3_callpeak: 22
+  frag_len: 22
+  tss_enrichment: 4
+  frip_all: 22
+  pseudoreps: 4
+  macs3_pseudoreps: 4
+  idr: 4
+  overlap_peaks: 4
+  overlap_peaks_abc: 4
+
+set-resources:              # tune from benchmarks/ TSVs after a real run
+  fastp:
+    mem_mb: 32000 * attempt
+  bowtie2_align:
+    slurm_partition: 12hours
+    runtime: 720m
+  pbc_qc:
+    mem_mb: 96000 * attempt
+  filter:
+    mem_mb: 128000 * attempt
+  bedgraphtobigwig:
+    mem_mb: 128000 * attempt
+
+rerun-incomplete: true
+keep-going: true
+show-failed-logs: true
+benchmark-extended: true
+retries: 1
+slurm-requeue: false
+printshellcmds: true
+latency-wait: 60

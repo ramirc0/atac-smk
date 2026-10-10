@@ -1,118 +1,64 @@
-configfile: "config/config.yml"
+import os
+
+from dotenv import load_dotenv
+
 
 include: "rules/common.smk"
-include: "rules/fastp.smk"
-include: "rules/bowtie2_build.smk"
-include: "rules/bowtie2_align.smk"
-include: "rules/pbc_qc.smk"
-include: "rules/filter.smk"
-include: "rules/bam_to_tagalign.smk"
-include: "rules/macs3_signal.smk"
-include: "rules/macs3_fold_change_signal.smk"
-include: "rules/macs3_pvalue_signal.smk"
-include: "rules/bedgraphtobigwig.smk"
-include: "rules/macs3_callpeak.smk"
-include: "rules/frag_len.smk"
-include: "rules/tss_enrichment.smk"
-include: "rules/frip_all.smk"
-include: "rules/pseudoreps.smk"
-include: "rules/macs3_pseudoreps.smk"
-include: "rules/idr.smk"
-include: "rules/overlap_peaks.smk"
-include: "rules/overlap_peaks_abc.smk"
+include: "rules/preprocess.smk"
+include: "rules/signal.smk"
+include: "rules/peaks.smk"
+include: "rules/qc.smk"
 
-localrules:
-  # Test
-  fastp,
-  bowtie2_build,
-  bowtie2_align,
-  pbc_qc,
-  filter,
-  bam_to_tagalign,
-  macs3_signal,
-  macs3_fold_change_signal,
-  macs3_pvalue_signal,
-  bedgraphtobigwig,
-  macs3_callpeak,
-  frag_len,
-  tss_enrichment,
-  frip_all,
-  pseudoreps,
-  macs3_pseudoreps,
-  idr,
-  overlap_peaks,
-  overlap_peaks_abc,
 
-SLACK_WEBHOOK_URL=os.environ.get("SLACK_WEBHOOK_URL")
+# The Slack webhook URL may come from a .env file in the working directory.
+load_dotenv()
+SLACK_WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+
+
+def notify_slack(text):
+    """Post a message to the Slack webhook.
+
+    Parameters
+    ----------
+    text : str
+        Message text.
+    """
+    payload = f'{{"text":"{text}"}}'
+    shell(
+        "curl -X POST -H 'Content-Type: application/json' -d {payload:q} {SLACK_WEBHOOK_URL:q}"
+    )
+
+
 if SLACK_WEBHOOK_URL:
-  print("SLACK_WEBHOOK_URL found")
-  onstart:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Started 🚀\"}}' {SLACK_WEBHOOK_URL}")
-  onsuccess:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished Successfully! ✅\"}}' {SLACK_WEBHOOK_URL}")
-  onerror:
-    shell("curl -X POST -H \"Content-Type: application/json\" -d '{{\"text\":\"Snakemake Finished With Errors! ❌\"}}' {SLACK_WEBHOOK_URL}")
-else:
-  print("SLACK_WEBHOOK_URL not found")
+    print("SLACK_WEBHOOK_URL found")
 
-wildcard_constraints:
-    pseudorep=r"pseudorep(1|2)",
+    onstart:
+        notify_slack("Snakemake Started 🚀")
+
+    onsuccess:
+        notify_slack("Snakemake Finished Successfully! ✅")
+
+    onerror:
+        notify_slack("Snakemake Finished With Errors! ❌")
+
+else:
+    print("SLACK_WEBHOOK_URL not found")
+
 
 rule all:
     input:
-        # fastp
-        expand("results/fastp/{sample}.ok", sample=SAMPLES),
-       
-        # bowtie2-build
-        "results/bowtie2_build/reference.ok",
-
-        # bowtie2-align
-        expand("results/bowtie2_align/{sample}.ok", sample=SAMPLES),
-
-        # PBC QC
-        expand("results/pbc_qc/{sample}.ok", sample=SAMPLES),
-
-        # Filtering
-        expand("results/filter/{sample}.ok", sample=SAMPLES),
-
-        # BEDPE & tagAlign
-        expand("results/bedpe_tagalign/{sample}.ok", sample=SAMPLES),
-
-        # MACS3 signal bedGraph
-        expand("results/macs3_signal/{sample}.ok", sample=SAMPLES),
-
-        # bigtools bedgraphtobigwig
-        expand("results/macs3_signal/{sample}.bedgraphtobigwig.ok", sample=SAMPLES),
-
-        # fold change signal
-        expand("results/macs3_fold_change_signal/{sample}.ok", sample=SAMPLES),
-
-        # pvalue signal
-        expand("results/macs3_pvalue_signal/{sample}.ok", sample=SAMPLES),
-
-        # MACS3 callpeak
-        expand("results/macs3_callpeak/{sample}.ok", sample=SAMPLES),
-
-        # fragment length QC 
-        expand("results/frag_len/{sample}.ok", sample=SAMPLES),
-
-        # QC: TSS enrichment
-        expand("results/tss_enrichment/{sample}.ok", sample=SAMPLES),
-
-        # QC: FRiP
-        expand("results/frip_all/{sample}.ok", sample=SAMPLES),
-
-        # Pseudoreplicates & IDR
-        expand("results/pseudoreps/{sample}.ok", sample=SAMPLES),
-        
-        # MACS3 callpeak pseudoreps
-        expand("results/macs3_pseudoreps/{sample}.{pseudorep}.ok", sample=SAMPLES, pseudorep=["pseudorep1","pseudorep2"]),
-        
-        # IDR
-        expand("results/idr/{sample}.ok", sample=SAMPLES),
-
-        # Overlap peaks
-        expand("results/overlap_peaks/{sample}.ok", sample=SAMPLES),
-        
-        # Overlap peaks (ABC method)
-        expand("results/overlap_peaks_abc/{sample}.ok", sample=SAMPLES),
+        expand(
+            [
+                f"{OUTDIR}/{{sample}}/pbc_qc/{{sample}}.pbc.json",
+                f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}.bigWig",
+                f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}_FE.bw",
+                f"{OUTDIR}/{{sample}}/macs3_pvalue_signal/{{sample}}_ppois.bw",
+                f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.svg",
+                f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.svg",
+                f"{OUTDIR}/{{sample}}/frip_all/{{sample}}.txt",
+                f"{OUTDIR}/{{sample}}/idr/{{sample}}.IDR.bed",
+                f"{OUTDIR}/{{sample}}/overlap_peaks/{{sample}}_overlap_peaks.bed",
+                f"{OUTDIR}/{{sample}}/overlap_peaks_abc/{{sample}}.overlap_peaks.bed",
+            ],
+            sample=SAMPLES,
+        ),

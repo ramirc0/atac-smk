@@ -1,0 +1,16 @@
+samples: config/samples.tsv
+outdir: results
+pixi_env: default
+run_id: default          # outputs go under results/<run_id>/; override per run
+tmp_dir: .tmp            # samtools sort and IDR scratch; /tmp may be mounted noexec
+
+references:
+  fasta: resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+  tss: resources/ENCFF493CCB.bed
+
+params:
+  k: 4
+  q: 0.05
+  p: 0.01
+  samtools_exclude_flag: 1804
+  samtools_include_flag: 2
