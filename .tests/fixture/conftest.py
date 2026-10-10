@@ -61,7 +61,8 @@ def run():
     """
     if not (FIXTURE / "genome.fa").exists():
         pytest.skip("fixture missing: run .tests/fixture/make_fixture.sh")
-    done = snakemake("--profile", "profiles/local", "--configfile", CONFIG)
+    # Some tests read temp files, such as the trimmed reads.
+    done = snakemake("--profile", "profiles/local", "--configfile", CONFIG, "--notemp")
     assert done.returncode == 0, done.stderr[-5000:]
     return RUN
 
