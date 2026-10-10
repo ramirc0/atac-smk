@@ -7,7 +7,7 @@ rule tss_enrichment:
         png="results/tss_enrichment/{sample}.png", 
         metrics="results/tss_enrichment/{sample}.txt",
         signal=touch("results/tss_enrichment/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: 
         "logs/tss_enrichment/{sample}.log"
     shell:

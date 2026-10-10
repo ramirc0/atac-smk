@@ -8,7 +8,7 @@ rule macs3_signal:
         signal=touch("results/macs3_signal/{sample}.ok"),
     params:
         parent_dir="results/macs3_signal/",
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/macs3_signal/{sample}.log"
     shell:
         """

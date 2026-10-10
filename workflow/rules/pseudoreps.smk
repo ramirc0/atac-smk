@@ -5,7 +5,7 @@ rule pseudoreps:
     output: 
         tagalign=["results/pseudoreps/{sample}_pseudorep1.tagalign", "results/pseudoreps/{sample}_pseudorep2.tagalign"],
         signal=touch("results/pseudoreps/{sample}.ok"),
-    container: config['environments']['custom']
+    software: SOFTWARE_ENV
     log: "logs/pseudoreps/{sample}.log"
     shell:
         """

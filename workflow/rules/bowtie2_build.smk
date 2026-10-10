@@ -12,13 +12,13 @@ rule bowtie2_build:
         signal=touch("results/bowtie2_build/reference.ok"),
     params:
         output_prefix = "results/bowtie2_build/reference",
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/bowtie2_build.log"
     shell:
         """
         exec >> {log} 2>&1
         samtools faidx -@ {resources.threads} {input.fa} -o - | cut -f 1,2 > {output.chromsizes}
         cat {output.chromsizes} | awk 'BEGIN{{FS=OFS="\t"}}{{print $1,0,$2}}' | sort -k1,1 -k2,2n > {output.chromsizes_bed}
-        bowtie2-build --threads {resources.threads} {input.fa} {params.output_prefix}
+        bowtie2-build --large-index --threads {resources.threads} {input.fa} {params.output_prefix}
         """
 

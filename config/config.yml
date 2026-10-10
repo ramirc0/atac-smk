@@ -14,6 +14,4 @@ input:
   sample_map: "MOHD.sample_map.tsv"
   tmp_dir: ".tmp"
 
-environments:
-  custom: "docker://clarity001/atac-smk:latest"
-  idr: "environments/idr.yaml"
+pixi_env: default

@@ -10,7 +10,7 @@ rule macs3_fold_change_signal:
         fc_bedgraph_sorted="results/macs3_fold_change_signal/{sample}_FE_sorted.bdg",
         fc_signal="results/macs3_fold_change_signal/{sample}_FE.bw",
         signal=touch("results/macs3_fold_change_signal/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/macs3_fold_change_signal/{sample}.log"
     params:
         output_prefix="results/macs3_fold_change_signal/{sample}",

@@ -6,7 +6,7 @@ rule overlap_peaks:
     output: 
         overlap_peaks="results/overlap_peaks/{sample}_overlap_peaks.bed",
         signal=touch("results/overlap_peaks/{sample}.ok"),
-    container: config['environments']['custom']
+    software: SOFTWARE_ENV
     log: "logs/overlap_peaks/{sample}.log"
     shell:
         """

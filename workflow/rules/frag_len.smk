@@ -6,7 +6,7 @@ rule frag_len:
         png="results/frag_len/{sample}.png", 
         metrics="results/frag_len/{sample}.txt",
         signal=touch("results/frag_len/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: 
         "logs/frag_len/{sample}.log"
     shell:

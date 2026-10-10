@@ -8,7 +8,7 @@ rule macs3_pseudoreps:
     params:
         parent_dir="results/macs3_pseudoreps/",
         p=config["params"]["p"],
-    container: config['environments']['custom']
+    software: SOFTWARE_ENV
     log: "logs/macs3_pseudoreps/{sample}.{pseudorep}.log"
     shell:
         """

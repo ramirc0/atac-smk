@@ -5,7 +5,7 @@ rule pbc_qc:
     output:
         pbc_json="results/pbc_qc/{sample}.pbc.json",
         signal=touch("results/pbc_qc/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/pbc_qc/{sample}.log"
     shell:
         """

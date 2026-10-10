@@ -22,27 +22,17 @@ You will also need the following reference files placed in a `resources/` direct
 
 This pipeline requires the following dependencies:
 
-- [`conda` (preferably `mamba`)](https://github.com/conda-forge/miniforge)
-- [`singularity` / `apptainer`](https://docs.sylabs.io/guides/3.0/user-guide/installation.html)
+- [`pixi`](https://pixi.sh)
 - (Optional) [`slurm`](https://slurm.schedmd.com/quickstart.html)
-- (Optional) [`uv`](https://github.com/astral-sh/uv) for local development
 
-To start, set up the runtime environment:
-
-```bash
-mamba env create --name=atac-smk --file=environments/atac-smk.yaml
-mamba activate atac-smk
-```
-
-Alternatively, if using `uv` for development:
+To start, set up the launcher environment:
 
 ```bash
-uv sync
-source .venv/bin/activate
+pixi shell
 ```
 
 > [!NOTE]
-> The pipeline uses two container environments at runtime: `clarity001/atac-smk:latest` (for most rules) and a separate conda environment for IDR (`environments/idr.yaml`), since IDR requires a pinned Python 3.9 / NumPy 1.19 stack.
+> Rules run in two pixi environments from `workflow/envs/pixi.toml`: `default` (for most rules) and `idr`, since IDR requires a pinned Python 3.9 / NumPy 1.19 stack.
 
 ### Example Configfile
 

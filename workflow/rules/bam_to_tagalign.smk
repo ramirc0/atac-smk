@@ -8,7 +8,7 @@ rule bam_to_tagalign:
         signal=touch("results/bedpe_tagalign/{sample}.ok"),
     params:
       tagalign_prefix="results/bedpe_tagalign/{sample}.tagalign",
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/bedpe_tagalign/{sample}.log"
     shell:
         """

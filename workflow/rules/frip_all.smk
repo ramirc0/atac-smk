@@ -7,7 +7,7 @@ rule frip_all:
     output:
         frip_report = "results/frip_all/{sample}.txt",
         signal=touch("results/frip_all/{sample}.ok"),
-    container: config['environments']['custom']
+    software: SOFTWARE_ENV
     log: 
         "logs/frip_all/{sample}.log"
     shell:

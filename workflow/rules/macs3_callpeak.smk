@@ -5,7 +5,7 @@ rule macs3_callpeak:
     output:
         narrowpeak="results/macs3_callpeak/{sample}_peaks.narrowPeak",
         signal=touch("results/macs3_callpeak/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     params:
         q=config["params"]["q"],
         parent_dir="results/macs3_callpeak/",

@@ -9,7 +9,7 @@ rule bedgraphtobigwig:
         bedgraph=temp("results/macs3_signal/{sample}.bg"),
         bigwig="results/macs3_signal/{sample}.bigWig",
         signal=touch("results/macs3_signal/{sample}.bedgraphtobigwig.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/bedgraphtobigwig/{sample}.log"
     shell:
         """

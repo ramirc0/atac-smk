@@ -19,6 +19,7 @@ rule filter:
     params:
         exclude_flag=config['params']['samtools_exclude_flag'],
         include_flag=config['params']['samtools_include_flag'],
+    software: SOFTWARE_ENV
     shell:
         """
         exec >> {log} 2>&1

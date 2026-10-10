@@ -8,6 +8,10 @@ import os
 
 load_dotenv()
 
+# The workspace path is relative to the rule file. Every rule file sits in rules/.
+SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
+IDR_ENV = pixi(workspace="../envs", env="idr", locked=True)
+
 Path(config["input"]["tmp_dir"]).mkdir(parents=True, exist_ok=True)
 sample_map_df = pl.read_csv(config["input"]["sample_map"], separator="\t", comment_prefix="#")
 SAMPLES = sample_map_df["mohd_accession"].to_list()

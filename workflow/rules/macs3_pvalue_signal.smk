@@ -12,7 +12,7 @@ rule macs3_pvalue_signal:
         pvalue_bedgraph_sorted="results/macs3_pvalue_signal/{sample}_ppois_sorted.bdg",
         pvalue_signal="results/macs3_pvalue_signal/{sample}_ppois.bw",
         signal=touch("results/macs3_pvalue_signal/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/macs3_pvalue_signal/{sample}.log"
     params:
         output_prefix="results/macs3_pvalue_signal/{sample}",

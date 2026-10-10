@@ -155,11 +155,9 @@ set-resources:
     cpus_per_task: 4
     mem: 64000MB
 
-use-apptainer: True
-use-conda: True
-apptainer-prefix: workflow/rules/envs
-conda-prefix: workflow/rules/envs
-apptainer-args: -B /data
+software-deployment-method:
+  - pixi
+software-deployment-cache-prefix: ~/.cache/snakemake/software
 
 # Debug
 printshellcmds: True

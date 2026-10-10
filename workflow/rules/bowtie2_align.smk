@@ -12,7 +12,7 @@ rule bowtie2_align:
         k=config['params']['k'],
         tmp_dir=config["input"]["tmp_dir"],
         index_prefix=rules.bowtie2_build.params.output_prefix,
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log:
         "logs/bowtie2_align/{sample}.log"
     shell:

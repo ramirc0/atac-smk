@@ -7,7 +7,7 @@ rule fastp:
         report="results/fastp/{sample}.html",
         json="results/fastp/{sample}.json",
         signal=touch("results/fastp/{sample}.ok"),
-    container: config["environments"]["custom"]
+    software: SOFTWARE_ENV
     log: "logs/fastp/{sample}.log"
     shell:
         """

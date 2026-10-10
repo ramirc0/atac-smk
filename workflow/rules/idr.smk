@@ -7,7 +7,7 @@ rule idr:
         bed="results/idr/{sample}.IDR.bed",
         png="results/idr/{sample}.IDR.png",
         signal=touch("results/idr/{sample}.ok"),
-    conda:  "envs/idr.yaml"
+    software: IDR_ENV
     params:
         tmp_dir=config['input']['tmp_dir']
     log: "logs/idr/{sample}.log"
