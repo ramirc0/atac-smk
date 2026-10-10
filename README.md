@@ -219,21 +219,21 @@ A fix changes outputs.
 
 ## References
 
-> Buenrostro, J., Giresi, P., Zaba, L. et al. _Transposition of native chromatin for fast and sensitive epigenomic profiling of open chromatin, DNA-binding proteins and nucleosome position_. Nat Methods 10, 1213–1218, **2013**. https://doi.org/10.1038/nmeth.2688
+Buenrostro, Jason D., Paul G. Giresi, Lisa C. Zaba, Howard Y. Chang, and William J. Greenleaf. 2013. “Transposition of Native Chromatin for Fast and Sensitive Epigenomic Profiling of Open Chromatin, DNA-Binding Proteins and Nucleosome Position.” Nature Methods 10 (12): 1213–18. https://doi.org/10.1038/nmeth.2688.
 
-> Langmead, B., Salzberg, S. _Fast gapped-read alignment with Bowtie 2_. Nat Methods 9, 357–359, **2012**. https://doi.org/10.1038/nmeth.1923
+Chen, Shifu. 2025. “Fastp 1.0: An Ultra-Fast All-Round Tool for FASTQ Data Quality Control and Preprocessing.” iMeta 4 (5): e70078. https://doi.org/10.1002/imt2.70078.
 
-> Zhang, Y., Liu, T., Meyer, C.A. et al. _Model-based Analysis of ChIP-Seq (MACS)_. Genome Biol 9, R137, **2008**. https://doi.org/10.1186/gb-2008-9-9-r137
+Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. “Twelve Years of SAMtools and BCFtools.” GigaScience 10 (2): giab008. https://doi.org/10.1093/gigascience/giab008.
 
-> Qunhua Li, James B. Brown, Haiyan Huang, Peter J. Bickel. _Measuring reproducibility of high-throughput experiments_. The Annals of Applied Statistics, 5(3), 1752-1779, **2011**.
+Langmead, Ben, and Steven L. Salzberg. 2012. “Fast Gapped-Read Alignment with Bowtie 2.” Nature Methods 9 (4): 357–59. https://doi.org/10.1038/nmeth.1923.
 
-> Petr Danecek, James K Bonfield, Jennifer Liddle, John Marshall, Valeriu Ohan, Martin O Pollard, Andrew Whitwham, Thomas Keane, Shane A McCarthy, Robert M Davies, Heng Li. _Twelve years of SAMtools and BCFtools_. GigaScience, 10(2), giab008, **2021**. https://doi.org/10.1093/gigascience/giab008
+Li, Qunhua, James B. Brown, Haiyan Huang, and Peter J. Bickel. 2011. “Measuring Reproducibility of High-Throughput Experiments.” The Annals of Applied Statistics 5 (3): 1752–79. https://doi.org/10.1214/11-AOAS466.
 
-> Artem Tarasov, Albert J. Vilella, Edwin Cuppen, Isaac J. Nijman, Pjotr Prins. _Sambamba: fast processing of NGS alignment formats_. Bioinformatics, 31(12), 2032–2034, **2015**. https://doi.org/10.1093/bioinformatics/btv098
+Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. “Sustainable Data Analysis with Snakemake.” F1000Research 10 (January): 33. https://doi.org/10.12688/f1000research.29032.3.
 
-> Chen, Shifu. _fastp 1.0: An Ultra-Fast All-Round Tool for FASTQ Data Quality Control and Preprocessing_. iMeta 4, e70078, **2025**. https://doi.org/10.1002/imt2.70078
+Tarasov, Artem, Albert J. Vilella, Edwin Cuppen, Isaac J. Nijman, and Pjotr Prins. 2015. “Sambamba: Fast Processing of NGS Alignment Formats.” Bioinformatics (Oxford, England) 31 (12): 2032–34. https://doi.org/10.1093/bioinformatics/btv098.
 
-> Mölder F, Jablonski KP, Letcher B et al. _Sustainable data analysis with Snakemake_ [version 3; peer review: 2 approved]. F1000Research, 10:33, **2025**. https://doi.org/10.12688/f1000research.29032.3
+Zhang, Yong, Tao Liu, Clifford A. Meyer, et al. 2008. “Model-Based Analysis of ChIP-Seq (MACS).” Genome Biology 9 (9): R137. https://doi.org/10.1186/gb-2008-9-9-r137.
 
 ## Questions
 
