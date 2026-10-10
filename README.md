@@ -1,9 +1,11 @@
 # atac-smk
 
 A [Snakemake](https://github.com/snakemake/snakemake) pipeline for paired-end
-ATAC-seq. It follows the [ENCODE ATAC-seq processing standards](https://www.encodeproject.org/atac-seq/).
-Reads are trimmed and aligned. The filtered alignments feed signal tracks, peak
-calls, library QC and IDR on pseudoreplicates.
+ATAC-seq. It reproduces the single-replicate flow of the
+[ENCODE ATAC-seq pipeline](https://github.com/ENCODE-DCC/atac-seq-pipeline)
+v2.2.3, step by step. Reads are trimmed and aligned. The filtered alignments
+feed signal tracks, peak calls, IDR and naive overlap on pseudoreplicates, and
+ENCODE's library and enrichment QC.
 
 ## Layout
 
@@ -15,17 +17,19 @@ workflow/
   Snakefile              includes the rule files, defines rule all
   rules/
     common.smk           config, sample sheet, path constants
-    preprocess.smk       fastp, bowtie2 index and alignment, filtering, tagAlign
-    signal.smk           MACS3 pileup, fold-change and p-value bigWigs
-    peaks.smk            MACS3 peaks, pseudoreplicates, IDR, overlap peaks
-    qc.smk               PBC/NRF, fragment lengths, TSS enrichment, FRiP
+    preprocess.smk       trimming, bowtie2 indexes and alignment, filtering, tagAlign
+    peaks.smk            pseudoreplicates, MACS3 peaks, blacklist filter, IDR, overlap
+    signal.smk           fold-change, p-value and pileup bigWigs
+    qc.smk               PBC/NRF, fragment lengths, TSS, FRiP, mito, annotation, GC, JSD
   scripts/               argparse scripts, each with build_parser() + main()
-  envs/pixi.toml         rule envs (pixi workspace): default and idr
-.tests/integration/      ENCODE end-to-end test: config + sample sheet
+  envs/pixi.toml         rule envs (pixi workspace): default, idr and test
+.tests/
+  fixture/               chr21 fixture and tests against ENCODE's own task scripts
+  integration/           four ENCODE replicates end to end, compared with ENCODE's QC
 profiles/
   local/config.yaml      local execution
   slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
-pixi.toml                launcher env + lint task
+pixi.toml                launcher env, lint and test tasks
 pyproject.toml           ruff + numpydoc config
 ```
 
@@ -46,17 +50,30 @@ for another cluster with the
 [SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
 Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 
-## Integration test
+## Testing
 
-`.tests/integration/` runs four ENCODE ATAC-seq replicates end to end on full
-GRCh38. Its inputs live on the Weng Lab cluster, so it runs only there.
+Both tests use data on the Weng Lab cluster, so they run only there.
+
+`pixi run test` runs the fixture tests. The fixture holds the chr21 and chrM
+reads of ENCSR095QNB replicates 1 and 2, named `S1` and `S10`. The tests run the
+workflow on it. Then they run ENCODE's own task scripts, from the
+`encodedcc/atac-seq-pipeline:v2.2.3` image, on the same inputs, and compare.
+Build the fixture once and pull the image once:
+
+```bash
+pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/fixture/make_fixture.sh
+apptainer pull /data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif \
+    docker://encodedcc/atac-seq-pipeline:v2.2.3   # or set ENCODE_SIF
+pixi run test
+```
+
+The integration test runs four ENCODE replicates on full GRCh38, then prints
+their QC beside ENCODE's published values:
 
 ```bash
 snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
+pixi run --manifest-path workflow/envs/pixi.toml python .tests/integration/compare_encode.py
 ```
-
-Outputs go under `results/encode-integration/`. Compare the QC with ENCODE's
-for the same replicates.
 
 ## Inputs
 
@@ -64,10 +81,17 @@ The sample sheet is a TSV with a header row. `sample_id` names the sample. `r1`
 and `r2` are its raw paired-end FASTQs. Lines that start with `#` are comments.
 Each `sample_id` MUST be unique.
 
-The references live in `resources/` (gitignored):
+The references are ENCODE's GRCh38 files. Download them from
+`https://www.encodeproject.org/files/<accession>/@@download/<accession>.bed.gz`.
 
-- the GRCh38 FASTA, no-alt analysis set
-- a TSS BED, e.g. `ENCFF493CCB.bed`
+| Key | File |
+|---|---|
+| `references.fasta` | GRCh38 no-alt analysis set FASTA (`GRCh38_no_alt_analysis_set_GCA_000001405.15`) |
+| `references.tss` | TSS, ENCFF493CCB |
+| `references.blacklist` | Exclusion list v2, ENCFF356LFX |
+| `references.dhs` | Universal DHS regions, ENCFF304XEX |
+| `references.promoters` | Promoters, ENCFF140XLU |
+| `references.enhancers` | Enhancers, ENCFF212UAV |
 
 ## Configuration
 
@@ -77,79 +101,85 @@ The references live in `resources/` (gitignored):
 | `outdir` | Results root. |
 | `run_id` | Run name. Outputs go under `results/<run_id>/`. |
 | `pixi_env` | Environment of `workflow/envs/pixi.toml` that most rules use. |
-| `tmp_dir` | Scratch for `samtools sort` and IDR. Use `.tmp` where `/tmp` is mounted `noexec`. |
-| `references.fasta` | Reference genome FASTA. |
-| `references.tss` | TSS BED for TSS enrichment. |
-| `params.k` | Alignments bowtie2 reports per read (`-k`). |
-| `params.q` | MACS3 q-value cutoff for full-sample peaks. |
-| `params.p` | MACS3 p-value cutoff for pseudoreplicate peaks. |
-| `params.samtools_exclude_flag` | SAM flags to drop. `1804` drops unmapped (4), mate unmapped (8), secondary (256), QC fail (512) and duplicate (1024) reads. |
-| `params.samtools_include_flag` | SAM flags to require. `2` keeps proper pairs. |
+| `mito_chr_name` | Mitochondrial contig. |
+| `tmp_dir` | Scratch for sorts and per-job temp directories. Use `.tmp` where `/tmp` is small. |
+| `references.*` | See Inputs. |
+| `params.multimapping` | Alignments a read may have. bowtie2 runs with `-k` one higher. |
+| `params.pval_thresh` | MACS3 p-value cutoff. |
+| `params.cap_num_peak` | Peaks kept per call, by p-value. |
+| `params.smooth_win` | MACS3 `--extsize`. `--shift` is minus half of it. |
+| `params.idr_thresh` | IDR threshold on global IDR. |
 
 ## Steps
 
 Preprocessing, in `preprocess.smk`:
 
-- `fastp` trims adapters and low-quality bases. It writes HTML and JSON reports.
-- `bowtie2_build` indexes the reference and writes its chromosome sizes.
-- `bowtie2_align` aligns with `-X 2000 --mm -k 4` into a sorted, indexed BAM.
-- `filter` marks duplicates with sambamba and keeps proper pairs with MAPQ ≥ 30.
-  It drops every SAM line that mentions `chrM`.
-- `bam_to_tagalign` writes a BEDPE and a Tn5-shifted, sorted tagAlign.
-
-Signal tracks, in `signal.smk`:
-
-- `macs3_signal` runs `macs3 callpeak -B` for the pileup and control lambda.
-- `bedgraphtobigwig` converts the pileup to bigWig.
-- `macs3_fold_change_signal` and `macs3_pvalue_signal` run `macs3 bdgcmp`
-  (`-m FE` and `-m ppois`) and convert the result to bigWig.
+- `fastp_qc` writes fastp's HTML and JSON report on the raw reads. It trims nothing.
+- `trim` detects each mate's adapter as ENCODE does and trims it with
+  `cutadapt -e 0.1 -m 5`.
+- `bowtie2_build` and `bowtie2_build_mito` index the genome and its mitochondrial contig.
+- `bowtie2_align` aligns with `-k 5 -X 2000 --mm` into a sorted, indexed BAM.
+- `filter` keeps proper pairs. Read names with more than 4 alignments are dropped,
+  others keep their primary one at any MAPQ. Then sambamba marks duplicates,
+  which are removed with the mitochondrial reads.
+- `tagalign` writes one Tn5-shifted line per mate, in name order.
 
 Peaks, in `peaks.smk`:
 
-- `macs3_callpeak` calls full-sample peaks at the `params.q` cutoff.
-- `pseudoreps` shuffles the BEDPE rows (seed 61) and splits them into two
-  pseudoreplicate tagAligns.
-- `macs3_pseudoreps` calls peaks on each pseudoreplicate at the `params.p` cutoff.
-- `idr` scores the pseudoreplicate peaks with IDR and plots the result.
-- `overlap_peaks` keeps pseudoreplicate 1 peaks that overlap a pseudoreplicate 2
-  peak.
-- `overlap_peaks_abc` keeps full-sample peaks that overlap a peak in each
-  pseudoreplicate. The overlap covers at least half of either peak.
+- `pseudoreps` shuffles whole read pairs with ENCODE's seeded keystream and halves them.
+- `macs3` calls the sample's peaks and writes the bedGraphs for signal.
+  `macs3_pseudorep` calls each pseudoreplicate's peaks. Both use
+  `-p 0.01 --shift -75 --extsize 150 --nomodel --keep-dup all --call-summits`,
+  sort by p-value and keep 300,000 peaks.
+- `blacklist_filter` drops peaks that touch the exclusion list or lie off chr1-22, X and Y.
+- `idr` scores the pseudoreplicate peaks against the sample's own. It keeps
+  peaks at global IDR ≤ 0.05. `plot_idr` draws the IDR panels.
+- `overlap` keeps sample peaks that overlap a peak in each pseudoreplicate by
+  half of either peak.
+
+Signal, in `signal.smk`:
+
+- `signal` writes fold-change and p-value bigWigs with `macs3 bdgcmp`, plus a
+  pileup bigWig in signal per million reads.
 
 QC, in `qc.smk`:
 
-- `pbc_qc` computes PBC1, PBC2 and NRF from the unfiltered BAM.
-- `frag_len` counts fragment lengths and plots them. It reports the share of
-  nucleosome-free, mono-, di- and tri-nucleosomal fragments.
-- `tss_enrichment` scores Tn5 cut sites in a ±2 kb window around each TSS.
-- `frip_all` computes the fraction of tagAlign reads in peaks.
+- `pbc_qc` computes NRF, PBC1 and PBC2 on the filtered reads before duplicate removal.
+- `frag_len` runs Picard CollectInsertSizeMetrics and ENCODE's NFR and
+  nucleosome checks.
+- `tss_enrichment` ports ENCODE's metaseq TSS enrichment.
+- `frip` counts tagAlign reads in each filtered peak set.
+- `frac_mito` aligns every read to the mitochondrial contig alone, as ENCODE does.
+- `annot_enrich` counts reads in DHS, promoter, enhancer and blacklist regions.
+- `gc_bias` runs Picard CollectGcBiasMetrics. `jsd` runs deeptools plotFingerprint.
 
 ## Outputs
 
-Each sample writes to `results/<run_id>/<sample>/<step>/`. The bowtie2 index and
-chromosome sizes do not depend on the run. They go to `results/refs/bowtie2_build/`.
-Logs and benchmarks mirror the run layout under `logs/<run_id>/` and
-`benchmarks/<run_id>/`.
+Each sample writes to `results/<run_id>/<sample>/<step>/`. The indexes and
+chromosome sizes do not depend on the run. They go to `results/refs/`. Logs and
+benchmarks mirror the run layout under `logs/<run_id>/` and `benchmarks/<run_id>/`.
+Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once used.
 
 | Step directory | Key outputs |
 |---|---|
-| `fastp/` | Trimmed FASTQs, HTML and JSON reports |
+| `fastp/` | fastp HTML and JSON report |
+| `trim/` | cutadapt JSON report |
 | `bowtie2_align/` | Sorted BAM, flagstat JSON |
-| `pbc_qc/` | PBC1, PBC2 and NRF JSON |
-| `filter/` | Filtered BAM, flagstat JSON |
-| `bedpe_tagalign/` | BEDPE, gzipped tagAlign |
-| `macs3_signal/` | Pileup and control lambda bedGraphs, pileup bigWig |
-| `macs3_fold_change_signal/` | Fold-change bedGraph and bigWig |
-| `macs3_pvalue_signal/` | P-value bedGraph and bigWig |
-| `macs3_callpeak/` | narrowPeak |
-| `frag_len/` | Distribution plot (SVG, PNG), range counts TXT |
-| `tss_enrichment/` | Profile plot (SVG, PNG), score JSON in a TXT |
-| `frip_all/` | FRiP TXT |
+| `filter/` | Filtered BAM and index, flagstat JSON |
+| `tagalign/` | Tn5-shifted tagAlign |
 | `pseudoreps/` | Pseudoreplicate tagAligns |
-| `macs3_pseudoreps/` | Pseudoreplicate narrowPeaks |
-| `idr/` | IDR BED, IDR plot PNG |
-| `overlap_peaks/` | Overlap peaks BED |
-| `overlap_peaks_abc/` | Overlap peaks BED (50% rule) |
+| `peaks/` | Sample and pseudoreplicate narrowPeaks, filtered sample peaks |
+| `idr/` | IDR peaks (filtered), all IDR scores, IDR plot |
+| `overlap/` | Naive overlap peaks (filtered) |
+| `signal/` | Fold-change, p-value and pileup bigWigs |
+| `pbc_qc/` | NRF, PBC1 and PBC2 JSON |
+| `frag_len/` | ENCODE's `nucleosomal.qc`, distribution plot |
+| `tss_enrichment/` | ENCODE's `tss_enrich.qc`, profile plot |
+| `frip/` | FRiP per peak set |
+| `frac_mito/` | Mitochondrial read fraction |
+| `annot_enrich/` | Read fractions per annotation |
+| `gc_bias/` | Picard GC metrics, plot |
+| `jsd/` | deeptools fingerprint metrics, plot |
 
 ## Slack notifications
 
@@ -167,15 +197,14 @@ The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
 for pixi deployment and SLURM. The rule envs live in a second pixi workspace,
 `workflow/envs/`. Its `pixi.lock` pins every package.
 `default` runs most rules. `idr` runs IDR on the Python 3.9 / NumPy 1.19 stack it
-needs. pixi MUST be on `PATH`. Jobs install the envs on first use.
-
-The tool versions match `clarity001/atac-smk:opt`, the image that produced the
-production results.
+needs. `test` adds pytest and seqkit. pixi MUST be on `PATH`. Jobs install the
+envs on first use.
 
 Add a dependency with `pixi add <pkg>` in `workflow/envs/`. After a hand edit,
-run `pixi lock` there (rules use `locked=True`). Any change to the manifest or
-lock reruns every rule. So does moving the workdir, because the env hash includes
-the workspace's absolute path.
+run `pixi lock` there (rules use `locked=True`). `pixi update` moves the lock to
+the newest versions the manifest allows. Any change to the manifest or lock
+reruns every rule. So does moving the workdir, because the env hash includes the
+workspace's absolute path.
 
 ## Conventions
 
@@ -195,27 +224,15 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
 
-## Known issues
+## Differences from ENCODE
 
-These legacy bugs stay to keep outputs identical to the production results.
-A fix changes outputs.
-
-- `bedpe_to_pseudoreps.py` builds pseudoreplicate 1's mate-2 reads from
-  pseudoreplicate 2's rows. Pseudoreplicate 1's own mate-2 reads are dropped.
-  On chr21 of one sample, half of pseudoreplicate 2 also appears in
-  pseudoreplicate 1. The overlap inflates IDR and overlap-peak reproducibility.
-- `bam_to_tagalign.py` prints errors and carries on. A failed step can leave
-  truncated outputs in a job that reports success.
-- `calculate_frip.py` pipes `bedtools intersect` into `wc -l` without
-  `pipefail`. A bedtools failure gives a FRiP of 0.
-- `idr` runs `rm <tmp_dir>/<sample>*`. It deletes other samples' scratch files
-  when sample IDs prefix one another, such as `S1` and `S10`.
-- `plot_fragment_length_distr.py` uses inclusive ranges. Fragments of 147, 294
-  and 441 bp count in two classes, so the shares can sum past 100%. Fragments
-  over 1000 bp count only in the total.
-- `tss_enrichment.py` adds a read's cut site once per pileup column the read
-  covers. Each read is weighted by its aligned length in the window.
-- `pbc_qc.py` takes `pos + len(seq)` as the read end and ignores the CIGAR.
+- ENCODE's `assign_multimappers.py` drops the last read name of every BAM. This does not.
+- MACS3 3.0.5 replaces MACS2 2.2.4. Peak regions match. Summits differ where
+  MACS3 fixed summit selection bugs.
+- sambamba marks duplicates, with ENCODE's settings. ENCODE's default is Picard.
+- Fragment length QC reads every record. ENCODE stops after 5M, mostly chr1.
+- One MACS3 call per sample gives peaks and signal. ENCODE runs the same call twice.
+- There is no replicate pooling or true-replicate IDR. Each sample is one replicate.
 
 ## References
 
@@ -229,7 +246,11 @@ Langmead, Ben, and Steven L. Salzberg. 2012. “Fast Gapped-Read Alignment with 
 
 Li, Qunhua, James B. Brown, Haiyan Huang, and Peter J. Bickel. 2011. “Measuring Reproducibility of High-Throughput Experiments.” The Annals of Applied Statistics 5 (3): 1752–79. https://doi.org/10.1214/11-AOAS466.
 
+Martin, Marcel. 2011. “Cutadapt Removes Adapter Sequences from High-Throughput Sequencing Reads.” EMBnet.Journal 17 (1): 10–12. https://doi.org/10.14806/ej.17.1.200.
+
 Mölder, Felix, Kim Philipp Jablonski, Brice Letcher, et al. 2021. “Sustainable Data Analysis with Snakemake.” F1000Research 10 (January): 33. https://doi.org/10.12688/f1000research.29032.3.
+
+Ramírez, Fidel, Devon P. Ryan, Björn Grüning, et al. 2016. “deepTools2: A next Generation Web Server for Deep-Sequencing Data Analysis.” Nucleic Acids Research 44 (W1): W160–65. https://doi.org/10.1093/nar/gkw257.
 
 Tarasov, Artem, Albert J. Vilella, Edwin Cuppen, Isaac J. Nijman, and Pjotr Prins. 2015. “Sambamba: Fast Processing of NGS Alignment Formats.” Bioinformatics (Oxford, England) 31 (12): 2032–34. https://doi.org/10.1093/bioinformatics/btv098.
 
