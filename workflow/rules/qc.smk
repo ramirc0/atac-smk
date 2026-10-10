@@ -74,24 +74,43 @@ rule tss_enrichment:
         """
 
 
-rule frip_all:
+# ENCODE's FRiP: tagAlign lines that touch a peak, for each filtered peak set.
+rule frip:
     input:
         tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
-        peaks=f"{OUTDIR}/{{sample}}/macs3_callpeak/{{sample}}_peaks.narrowPeak",
+        peaks=f"{OUTDIR}/{{sample}}/peaks/{{sample}}.bfilt.narrowPeak.gz",
+        idr=f"{OUTDIR}/{{sample}}/idr/{{sample}}.idr.bfilt.narrowPeak.gz",
+        overlap=f"{OUTDIR}/{{sample}}/overlap/{{sample}}.overlap.bfilt.narrowPeak.gz",
     output:
-        f"{OUTDIR}/{{sample}}/frip_all/{{sample}}.txt",
+        f"{OUTDIR}/{{sample}}/frip/{{sample}}.tsv",
+    params:
+        tmp_dir=TMP_DIR,
     log:
-        f"{LOGDIR}/frip_all/{{sample}}.txt",
+        f"{LOGDIR}/frip/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/frip_all/{{sample}}.tsv",
+        f"{BENCHDIR}/frip/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/calculate_frip.py \
-            --tagalign {input.tagalign:q} \
-            --peaks {input.peaks:q} \
-            --output {output:q}
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
+
+        # ENCODE decompresses first; bedtools mishandles two gzipped inputs.
+        python -m zlib_ng.gzip_ng -cd {input.tagalign:q} > "$tmp/ta"
+        reads=$(wc -l < "$tmp/ta")
+        frip() {{
+            python -m zlib_ng.gzip_ng -cd "$2" > "$tmp/peaks"
+            hits=$(bedtools intersect -nonamecheck -a "$tmp/ta" -b "$tmp/peaks" -wa -u | wc -l)
+            awk -v set="$1" -v hits="$hits" -v reads="$reads" \
+                'BEGIN {{ printf "%s\t%d\t%d\t%.6f\n", set, hits, reads, hits / reads }}'
+        }}
+        {{
+            printf "peak_set\treads_in_peaks\treads\tfrip\n"
+            frip peaks {input.peaks:q}
+            frip idr {input.idr:q}
+            frip overlap {input.overlap:q}
+        }} > {output:q}
         """

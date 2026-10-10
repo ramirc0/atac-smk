@@ -1,139 +1,52 @@
-# MACS3 signal tracks as bigWig.
+# MACS3 signal tracks as bigWig, as the ENCODE ATAC-seq pipeline makes them.
 
 
-rule macs3_signal:
-    input:
-        f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
-    output:
-        bedgraph=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
-        control_lambda=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_control_lambda.bdg",
-    params:
-        outdir=f"{OUTDIR}/{{sample}}/macs3_signal",
-    log:
-        f"{LOGDIR}/macs3_signal/{{sample}}.txt",
-    benchmark:
-        f"{BENCHDIR}/macs3_signal/{{sample}}.tsv",
-    software:
-        SOFTWARE_ENV
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        macs3 callpeak \
-            -f BED \
-            -t {input:q} \
-            -n {wildcards.sample:q} \
-            --outdir {params.outdir:q} \
-            --nomodel \
-            --shift -75 \
-            --keep-dup all \
-            --extsize 150 \
-            -g hs \
-            -q 0.01 \
-            -B
-        """
-
-
-rule bedgraphtobigwig:
-    input:
-        bedgraph=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
-        chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",
-        chromsizes_bed=f"{REFDIR}/bowtie2_build/reference.chromsizes.bed",
-    output:
-        bedgraph=temp(f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}.bg"),
-        bigwig=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}.bigWig",
-    log:
-        f"{LOGDIR}/bedgraphtobigwig/{{sample}}.txt",
-    benchmark:
-        f"{BENCHDIR}/bedgraphtobigwig/{{sample}}.tsv",
-    software:
-        SOFTWARE_ENV
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        bedtools intersect \
-            -a {input.bedgraph:q} \
-            -b {input.chromsizes_bed:q} \
-            -sorted \
-            > {output.bedgraph:q}
-        bedGraphToBigWig {output.bedgraph:q} {input.chromsizes:q} {output.bigwig:q}
-        """
-
-
-rule macs3_fold_change_signal:
-    input:
-        treat_pileup=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
-        control_lambda=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_control_lambda.bdg",
-        chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",
-    output:
-        bedgraph=temp(f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}_FE.bdg"),
-        bedgraph_sorted=f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}_FE_sorted.bdg",
-        bigwig=f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}_FE.bw",
-    params:
-        prefix=f"{OUTDIR}/{{sample}}/macs3_fold_change_signal/{{sample}}",
-    log:
-        f"{LOGDIR}/macs3_fold_change_signal/{{sample}}.txt",
-    benchmark:
-        f"{BENCHDIR}/macs3_fold_change_signal/{{sample}}.tsv",
-    software:
-        SOFTWARE_ENV
-    shell:
-        r"""
-        exec &> >(tee {log:q})
-
-        macs3 bdgcmp \
-            -t {input.treat_pileup:q} \
-            -c {input.control_lambda:q} \
-            --o-prefix {params.prefix:q} \
-            -m FE
-
-        bedtools slop -i {output.bedgraph:q} -g {input.chromsizes:q} -b 0 \
-            | bedClip stdin {input.chromsizes:q} /dev/stdout \
-            | LC_COLLATE=C sort -k1,1 -k2,2n -S {resources.mem_mb:q}M \
-            | awk 'BEGIN{{OFS="\t"}}{{if (NR==1 || NR>1 && (prev_chr!=$1 || prev_chr==$1 && prev_chr_e<=$2)) {{print $0}}; prev_chr=$1; prev_chr_e=$3;}}' \
-            > {output.bedgraph_sorted:q}
-
-        bedGraphToBigWig {output.bedgraph_sorted:q} {input.chromsizes:q} {output.bigwig:q}
-        """
-
-
-rule macs3_pvalue_signal:
+# The bedGraphs are per million reads (--SPMR), so -S scales the p-value track back
+# to read counts: tagAlign lines over a million, as ENCODE computes it. Fold change
+# needs no scaling. The pileup bigWig is not an ENCODE output.
+rule signal:
     input:
         tagalign=f"{OUTDIR}/{{sample}}/tagalign/{{sample}}.tagAlign.gz",
-        treat_pileup=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_treat_pileup.bdg",
-        control_lambda=f"{OUTDIR}/{{sample}}/macs3_signal/{{sample}}_control_lambda.bdg",
+        treat=f"{OUTDIR}/{{sample}}/peaks/{{sample}}_treat_pileup.bdg",
+        control=f"{OUTDIR}/{{sample}}/peaks/{{sample}}_control_lambda.bdg",
         chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",
     output:
-        bedgraph=temp(f"{OUTDIR}/{{sample}}/macs3_pvalue_signal/{{sample}}_ppois.bdg"),
-        bedgraph_sorted=f"{OUTDIR}/{{sample}}/macs3_pvalue_signal/{{sample}}_ppois_sorted.bdg",
-        bigwig=f"{OUTDIR}/{{sample}}/macs3_pvalue_signal/{{sample}}_ppois.bw",
+        fc=f"{OUTDIR}/{{sample}}/signal/{{sample}}.fc.bigWig",
+        pval=f"{OUTDIR}/{{sample}}/signal/{{sample}}.pval.bigWig",
+        pileup=f"{OUTDIR}/{{sample}}/signal/{{sample}}.pileup.bigWig",
     params:
-        prefix=f"{OUTDIR}/{{sample}}/macs3_pvalue_signal/{{sample}}",
+        tmp_dir=TMP_DIR,
     log:
-        f"{LOGDIR}/macs3_pvalue_signal/{{sample}}.txt",
+        f"{LOGDIR}/signal/{{sample}}.txt",
     benchmark:
-        f"{BENCHDIR}/macs3_pvalue_signal/{{sample}}.tsv",
+        f"{BENCHDIR}/signal/{{sample}}.tsv"
     software:
         SOFTWARE_ENV
     shell:
         r"""
         exec &> >(tee {log:q})
 
-        SVAL=$(echo "scale=6; $(zcat {input.tagalign:q} | wc -l) / 1000000.0" | bc)
+        tmp=$(mktemp -d -p {params.tmp_dir:q})
+        trap 'rm -rf "$tmp"' EXIT
 
-        macs3 bdgcmp \
-            -t {input.treat_pileup:q} \
-            -c {input.control_lambda:q} \
-            --o-prefix {params.prefix:q} \
-            -m ppois \
-            -S $SVAL
+        # ENCODE: clamp to the contigs, sort, and drop intervals that start inside
+        # the previous one.
+        bigwig() {{
+            bedtools slop -i "$1" -g {input.chromsizes:q} -b 0 \
+                | bedClip stdin {input.chromsizes:q} /dev/stdout \
+                | sort -k1,1 -k2,2n -T "$tmp" \
+                | awk 'BEGIN {{ OFS = "\t" }} {{
+                    if (NR == 1 || prev_chr != $1 || prev_end <= $2) print
+                    prev_chr = $1; prev_end = $3
+                }}' \
+                > "$tmp/sorted.bdg"
+            bedGraphToBigWig "$tmp/sorted.bdg" {input.chromsizes:q} "$2"
+        }}
 
-        bedtools slop -i {output.bedgraph:q} -g {input.chromsizes:q} -b 0 \
-            | bedClip stdin {input.chromsizes:q} /dev/stdout \
-            | LC_COLLATE=C sort -k1,1 -k2,2n -S {resources.mem_mb:q}M \
-            | awk 'BEGIN{{OFS="\t"}}{{if (NR==1 || NR>1 && (prev_chr!=$1 || prev_chr==$1 && prev_chr_e<=$2)) {{print $0}}; prev_chr=$1; prev_chr_e=$3;}}' \
-            > {output.bedgraph_sorted:q}
-
-        bedGraphToBigWig {output.bedgraph_sorted:q} {input.chromsizes:q} {output.bigwig:q}
+        sval=$(python -m zlib_ng.gzip_ng -cd {input.tagalign:q} | wc -l | awk '{{ printf "%.6f", $1 / 1000000 }}')
+        macs3 bdgcmp -t {input.treat:q} -c {input.control:q} --outdir "$tmp" --o-prefix sample -m FE
+        macs3 bdgcmp -t {input.treat:q} -c {input.control:q} --outdir "$tmp" --o-prefix sample -m ppois -S "$sval"
+        bigwig "$tmp/sample_FE.bdg" {output.fc:q}
+        bigwig "$tmp/sample_ppois.bdg" {output.pval:q}
+        bigwig {input.treat:q} {output.pileup:q}
         """

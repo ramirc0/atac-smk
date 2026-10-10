@@ -157,7 +157,7 @@ def test_pseudoreplicates_match_encode(run):
         "--pseudoreplication-random-seed 0",
     )
     for pr in (1, 2):
-        ours = lines(run / f"S1/pseudoreps/S1_pseudorep{pr}.tagalign")
+        ours = lines(run / f"S1/pseudoreps/S1.pr{pr}.tagAlign.gz")
         theirs = lines(out / f"S1.tn5.pr{pr}.tagAlign.gz")
         assert first_difference(ours, theirs) is None
 
@@ -172,29 +172,134 @@ def test_pvalue_track_matches_encode(run):
         f"--gensz hs --chrsz {CHRSZ.name} --pval-thresh 0.01 --smooth-win 150",
     )
     theirs = bigwig_stats(out / "S1.tn5.pval.signal.bigwig")
-    ours = bigwig_stats(run / "S1/macs3_pvalue_signal/S1_ppois.bw")
+    ours = bigwig_stats(run / "S1/signal/S1.pval.bigWig")
     assert ours["mean"] == pytest.approx(theirs["mean"], rel=0.02)
     assert ours["max"] == pytest.approx(theirs["max"], rel=0.02)
 
 
-def test_idr_matches_encode(run):
-    """Check IDR peaks against ENCODE's on the same pseudoreplicate and sample peaks."""
-    pr1, pr2 = (
-        run / f"S1/macs3_pseudoreps/S1_pseudorep{i}_peaks.narrowPeak" for i in (1, 2)
-    )
-    peaks = run / "S1/macs3_callpeak/S1_peaks.narrowPeak"
-    ta = run / "S1/tagalign/S1.tagAlign.gz"
-    out = encode(
-        "idr/S1",
+def peak_files(run):
+    """Return S1's pseudoreplicate peaks, sample peaks and tagAlign.
+
+    Parameters
+    ----------
+    run : pathlib.Path
+        Workflow run directory.
+
+    Returns
+    -------
+    list of pathlib.Path
+        Pseudoreplicate 1 and 2 peaks, sample peaks, tagAlign.
+    """
+    return [
+        run / "S1/peaks/S1.pr1.narrowPeak.gz",
+        run / "S1/peaks/S1.pr2.narrowPeak.gz",
+        run / "S1/peaks/S1.narrowPeak.gz",
+        run / "S1/tagalign/S1.tagAlign.gz",
+    ]
+
+
+def encode_reproducibility(run, task):
+    """Run ENCODE's IDR or naive overlap on S1's peaks.
+
+    Parameters
+    ----------
+    run : pathlib.Path
+        Workflow run directory.
+    task : {"idr", "overlap"}
+        ENCODE task.
+
+    Returns
+    -------
+    pathlib.Path
+        ENCODE output directory.
+    """
+    pr1, pr2, peaks, ta = peak_files(run)
+    flags = "--idr-thresh 0.05 --idr-rank p.value" if task == "idr" else "--nonamecheck"
+    return encode(
+        f"{task}/S1",
         [pr1, pr2, peaks, ta, CHRSZ, BLACKLIST],
-        f"python3 $(which encode_task_idr.py) {pr1.name} {pr2.name} {peaks.name} "
-        "--prefix S1 --peak-type narrowPeak --idr-thresh 0.05 --idr-rank p.value "
+        f"python3 $(which encode_task_{task}.py) {pr1.name} {pr2.name} {peaks.name} "
+        f"--prefix S1 --peak-type narrowPeak {flags} "
         f"--blacklist {BLACKLIST.name} --regex-bfilt-peak-chr-name 'chr[\\dXY]+' "
         f"--ta {ta.name} --chrsz {CHRSZ.name}",
     )
-    ours = lines(run / "S1/idr/S1.IDR.bed")
+
+
+def frip(run, peak_set):
+    """Return one FRiP row of S1's ``frip.tsv`` as reads in peaks over reads.
+
+    Parameters
+    ----------
+    run : pathlib.Path
+        Workflow run directory.
+    peak_set : str
+        Row name: ``peaks``, ``idr`` or ``overlap``.
+
+    Returns
+    -------
+    float
+        Fraction of tagAlign lines in the peak set.
+    """
+    rows = [line.split("\t") for line in lines(run / "S1/frip/S1.tsv")]
+    row = next(r for r in rows if r[0] == peak_set)
+    return int(row[1]) / int(row[2])
+
+
+def test_peaks_match_encode(run):
+    """Check MACS3 peak regions against ENCODE's MACS2 call on the same tagAlign.
+
+    MACS3 places some summits of multi-summit regions differently from
+    MACS2 2.2.4, so rows may differ in summit and score. Regions may not.
+    """
+    ta = encode_tagalign(run)
+    out = encode(
+        "macs2/S1",
+        [ta, CHRSZ],
+        f"python3 $(which encode_task_macs2_atac.py) {ta.name} --gensz hs "
+        f"--chrsz {CHRSZ.name} --pval-thresh 0.01 --smooth-win 150 "
+        "--cap-num-peak 300000 --mem-gb 4",
+    )
+    ours = lines(run / "S1/peaks/S1.narrowPeak.gz")
+    theirs = lines(out / "S1.tn5.pval0.01.300K.narrowPeak.gz")
+    assert len(ours) == len(theirs)
+    region = lambda line: tuple(line.split("\t")[:3])
+    assert {region(x) for x in ours} == {region(x) for x in theirs}
+
+
+def test_blacklist_filter_and_frip_match_encode(run):
+    """Check the filtered sample peaks and their FRiP against ENCODE's."""
+    _, _, peaks, ta = peak_files(run)
+    out = encode(
+        "post_call_peak/S1",
+        [peaks, ta, CHRSZ, BLACKLIST],
+        f"python3 $(which encode_task_post_call_peak_atac.py) {peaks.name} "
+        f"--ta {ta.name} --peak-type narrowPeak --chrsz {CHRSZ.name} "
+        f"--blacklist {BLACKLIST.name} --regex-bfilt-peak-chr-name 'chr[\\dXY]+'",
+    )
+    ours = lines(run / "S1/peaks/S1.bfilt.narrowPeak.gz")
+    assert first_difference(ours, lines(out / "S1.bfilt.narrowPeak.gz")) is None
+    theirs = float(lines(out / "S1.bfilt.frip.qc")[0])
+    assert frip(run, "peaks") == pytest.approx(theirs, rel=1e-12)
+
+
+def test_idr_matches_encode(run):
+    """Check IDR peaks and their FRiP against ENCODE's on the same input peaks."""
+    out = encode_reproducibility(run, "idr")
+    ours = lines(run / "S1/idr/S1.idr.bfilt.narrowPeak.gz")
     theirs = lines(out / "S1.idr0.05.bfilt.narrowPeak.gz")
     assert first_difference(ours, theirs) is None
+    theirs = float(lines(out / "S1.idr0.05.bfilt.frip.qc")[0])
+    assert frip(run, "idr") == pytest.approx(theirs, rel=1e-12)
+
+
+def test_overlap_matches_encode(run):
+    """Check naive overlap peaks and their FRiP against ENCODE's."""
+    out = encode_reproducibility(run, "overlap")
+    ours = lines(run / "S1/overlap/S1.overlap.bfilt.narrowPeak.gz")
+    theirs = lines(out / "S1.overlap.bfilt.narrowPeak.gz")
+    assert first_difference(ours, theirs) is None
+    theirs = float(lines(out / "S1.overlap.bfilt.frip.qc")[0])
+    assert frip(run, "overlap") == pytest.approx(theirs, rel=1e-12)
 
 
 def test_tss_enrichment_matches_encode(run):
@@ -241,28 +346,24 @@ def test_tagalign_job_fails_on_a_corrupt_bam(tmp_path):
 
 def test_frip_job_fails_on_unreadable_peaks(tmp_path, run):
     """Check that a bedtools error fails the FRiP job instead of reporting 0."""
-    done = run_rule(
-        tmp_path,
-        "frip_all",
-        f"{PREFIX}/frip_all/S1.txt",
-        {
-            f"{PREFIX}/tagalign/S1.tagAlign.gz": (run / "S1/tagalign/S1.tagAlign.gz"),
-            f"{PREFIX}/macs3_callpeak/S1_peaks.narrowPeak": b"chr21\tnot\ta peak\n",
-        },
-    )
+    files = {
+        f"{PREFIX}/tagalign/S1.tagAlign.gz": run / "S1/tagalign/S1.tagAlign.gz",
+        f"{PREFIX}/peaks/S1.bfilt.narrowPeak.gz": b"chr21\tnot\ta peak\n",
+    }
+    for path in ("idr/S1.idr", "overlap/S1.overlap"):
+        files[f"{PREFIX}/{path}.bfilt.narrowPeak.gz"] = (
+            run / f"S1/{path}.bfilt.narrowPeak.gz"
+        )
+    done = run_rule(tmp_path, "frip", f"{PREFIX}/frip/S1.tsv", files)
     assert done.returncode != 0
 
 
 def test_idr_leaves_other_samples_scratch(tmp_path, run):
     """Check that S1's IDR job keeps S10's scratch files, whose names it prefixes."""
     scratch = tmp_path / ".tmp/S10_pseudorep1.sorted"
-    files = {
-        f"{PREFIX}/macs3_pseudoreps/S1_pseudorep{i}_peaks.narrowPeak": (
-            run / f"S1/macs3_pseudoreps/S1_pseudorep{i}_peaks.narrowPeak"
-        )
-        for i in (1, 2)
-    }
+    files = {f"{PREFIX}/peaks/{p.name}": p for p in peak_files(run)[:3]}
+    files["results-fixture/refs/bowtie2_build/reference.chromsizes"] = CHRSZ
     files[".tmp/S10_pseudorep1.sorted"] = b"S10 scratch\n"
-    done = run_rule(tmp_path, "idr", f"{PREFIX}/idr/S1.IDR.bed", files)
+    done = run_rule(tmp_path, "idr", f"{PREFIX}/idr/S1.idr.txt.gz", files)
     assert done.returncode == 0, done.stderr[-3000:]
     assert scratch.exists()

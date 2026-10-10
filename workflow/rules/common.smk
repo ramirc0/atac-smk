@@ -22,6 +22,7 @@ if config["params"]["multimapping"] < 1:
     raise WorkflowError("params.multimapping must be at least 1.")
 REFERENCE_FASTA = config["references"]["fasta"]
 TSS_REFERENCE = config["references"]["tss"]
+BLACKLIST = config["references"]["blacklist"]
 
 BOWTIE2_INDEX = f"{REFDIR}/bowtie2_build/reference"
 BOWTIE2_INDEX_FILES = multiext(
@@ -85,4 +86,6 @@ if not SAMPLES:
 
 wildcard_constraints:
     sample=r"[A-Za-z0-9][A-Za-z0-9_.-]*",
-    pseudorep=r"pseudorep(1|2)",
+    pr=r"pr[12]",
+    # Any peak file but a filtered one, so blacklist_filter never chains.
+    path=r"[^/]+/[^/]+(?<!\.bfilt)",

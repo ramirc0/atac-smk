@@ -7,9 +7,12 @@ tmp_dir: .tmp
 
 references:
   fasta: /data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
-  tss: /data/zusers/ramirezc/atac-smk/resources/ENCFF493CCB.bed
+  tss: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF493CCB.bed.gz
+  blacklist: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF356LFX.bed.gz
 
 params:
   multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1
-  q: 0.05
-  p: 0.01
+  pval_thresh: 0.01       # MACS3 p-value cutoff
+  cap_num_peak: 300000    # peaks kept per call, by p-value
+  smooth_win: 150         # MACS3 --extsize; --shift is minus half
+  idr_thresh: 0.05

@@ -27,19 +27,17 @@ set-threads:
   pbc_qc: 16
   filter: 22
   tagalign: 22
-  macs3_signal: 22
-  bedgraphtobigwig: 4
-  macs3_fold_change_signal: 4
-  macs3_pvalue_signal: 4
-  macs3_callpeak: 22
   frag_len: 22
   tss_enrichment: 4
-  frip_all: 22
-  pseudoreps: 4
-  macs3_pseudoreps: 4
-  idr: 4
-  overlap_peaks: 4
-  overlap_peaks_abc: 4
+  pseudoreps: 1
+  macs3: 1
+  macs3_pseudorep: 1
+  blacklist_filter: 1
+  signal: 1
+  idr: 1
+  plot_idr: 1
+  overlap: 1
+  frip: 1
 
 set-resources:              # tune from benchmarks/ TSVs after a real run
   fastp_qc:
@@ -50,8 +48,6 @@ set-resources:              # tune from benchmarks/ TSVs after a real run
   pbc_qc:
     mem_mb: 96000 * attempt
   filter:
-    mem_mb: 128000 * attempt
-  bedgraphtobigwig:
     mem_mb: 128000 * attempt
 
 rerun-incomplete: true
