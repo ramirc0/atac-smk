@@ -40,8 +40,8 @@ rule trim:
         r1=lambda w: R1_OF[w.sample],
         r2=lambda w: R2_OF[w.sample],
     output:
-        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
-        r2=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R2.fastq.gz",
+        r1=temp(f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz"),
+        r2=temp(f"{OUTDIR}/{{sample}}/trim/{{sample}}_R2.fastq.gz"),
         json=f"{OUTDIR}/{{sample}}/trim/{{sample}}.cutadapt.json",
     log:
         f"{LOGDIR}/trim/{{sample}}.txt",

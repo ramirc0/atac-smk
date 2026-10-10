@@ -50,6 +50,7 @@ rule all:
         expand(
             [
                 f"{OUTDIR}/{{sample}}/fastp/{{sample}}.html",
+                f"{OUTDIR}/{{sample}}/trim/{{sample}}.cutadapt.json",
                 f"{OUTDIR}/{{sample}}/pbc_qc/{{sample}}.pbc.json",
                 f"{OUTDIR}/{{sample}}/signal/{{sample}}.fc.bigWig",
                 f"{OUTDIR}/{{sample}}/signal/{{sample}}.pval.bigWig",
