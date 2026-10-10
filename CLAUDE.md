@@ -24,7 +24,7 @@ pixi run snakemake --profile profiles/local
 
 - Rule env pins match `clarity001/atac-smk:opt`, the image behind the production results. `:latest` is broken: no `bowtie2-build`, and `import polars` fails.
 - Tag `pre-template` is the last commit before the template port. Its outputs and this workflow's are byte-identical.
-- Legacy quirks stay on purpose. `bedpe_to_pseudoreps.py` mixes mates across pseudoreplicates. `bam_to_tagalign.py` swallows errors. A fix changes outputs and needs the user's approval.
+- README.md "Known issues" lists legacy bugs kept on purpose. A fix changes outputs and needs the user's approval.
 
 ## Gotchas
 
@@ -35,7 +35,6 @@ pixi run snakemake --profile profiles/local
 - Resources MUST be flat values. Never derive `mem_mb` or `runtime` from input size.
 - The `* attempt` retry scaling in `profiles/slurm/config.yaml` is intentional.
 - CLI `--set-threads` replaces the profile's whole mapping. Pass every rule.
-- `idr` deletes `<tmp_dir>/<sample>*`. Sample IDs that prefix one another collide.
 
 ## Verifying a change
 

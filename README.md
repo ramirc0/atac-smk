@@ -182,6 +182,28 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Docstrings follow numpydoc. `pixi run lint` checks the scripts with ruff and
   `numpydoc lint`. Neither tool parses `.smk` files.
 
+## Known issues
+
+These legacy bugs stay to keep outputs identical to the production results.
+A fix changes outputs.
+
+- `bedpe_to_pseudoreps.py` builds pseudoreplicate 1's mate-2 reads from
+  pseudoreplicate 2's rows. Pseudoreplicate 1's own mate-2 reads are dropped.
+  On chr21 of one sample, half of pseudoreplicate 2 also appears in
+  pseudoreplicate 1. The overlap inflates IDR and overlap-peak reproducibility.
+- `bam_to_tagalign.py` prints errors and carries on. A failed step can leave
+  truncated outputs in a job that reports success.
+- `calculate_frip.py` pipes `bedtools intersect` into `wc -l` without
+  `pipefail`. A bedtools failure gives a FRiP of 0.
+- `idr` runs `rm <tmp_dir>/<sample>*`. It deletes other samples' scratch files
+  when sample IDs prefix one another, such as `S1` and `S10`.
+- `plot_fragment_length_distr.py` uses inclusive ranges. Fragments of 147, 294
+  and 441 bp count in two classes, so the shares can sum past 100%. Fragments
+  over 1000 bp count only in the total.
+- `tss_enrichment.py` adds a read's cut site once per pileup column the read
+  covers. Each read is weighted by its aligned length in the window.
+- `pbc_qc.py` takes `pos + len(seq)` as the read end and ignores the CIGAR.
+
 ## References
 
 > Buenrostro, J., Giresi, P., Zaba, L. et al. _Transposition of native chromatin for fast and sensitive epigenomic profiling of open chromatin, DNA-binding proteins and nucleosome position_. Nat Methods 10, 1213–1218, **2013**. https://doi.org/10.1038/nmeth.2688
