@@ -47,5 +47,10 @@ matplotlib-base = "==3.5.3"
 numpy = "==1.19.5"
 scipy = "==1.9.1"
 
+[feature.test.dependencies]
+pytest = "*"
+seqkit = "*"
+
 [environments]
 idr = { features = ["idr"], no-default-feature = true }
+test = { features = ["test"] }

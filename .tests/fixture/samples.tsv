@@ -1,0 +1,4 @@
+# ENCSR095QNB (GM12878) replicates 1 and 2, cut to chr21 and chrM by make_fixture.sh.
+sample_id	r1	r2
+S1	resources/fixture/S1_R1.fastq.gz	resources/fixture/S1_R2.fastq.gz
+S10	resources/fixture/S10_R1.fastq.gz	resources/fixture/S10_R2.fastq.gz
