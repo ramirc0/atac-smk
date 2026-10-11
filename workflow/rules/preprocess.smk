@@ -227,9 +227,10 @@ rule filter:
         tmp=$(mktemp -d -p {params.tmp_dir:q})
         trap 'rm -rf "$tmp"' EXIT
 
+        # 22 x 2560M name-sorts a 6 GB BAM without spilling to disk and fits in 64 GB.
         samtools view -@ {threads:q} -u -F 524 -f 2 {input:q} \
-            | samtools sort -@ {threads:q} -m 1536M -n -u -T "$tmp/nmsrt" - \
-            | samtools view -h - \
+            | samtools sort -@ {threads:q} -m 2560M -n -u -T "$tmp/nmsrt" - \
+            | samtools view -@ {threads:q} -h - \
             | awk -v max={params.max_lines:q} '
                 /^@/ {{ print; next }}
                 $1 != name {{ if (n <= max) printf "%s", group; name = $1; n = 0; group = "" }}
