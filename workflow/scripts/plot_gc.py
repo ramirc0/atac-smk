@@ -25,7 +25,7 @@ def build_parser():
 
 
 def main(argv=None):
-    """Draw coverage and base quality by GC, as ENCODE's plot_gc does.
+    """Draw ENCODE's plot_gc series (coverage, genome windows, base quality) by GC.
 
     Parameters
     ----------
@@ -37,20 +37,20 @@ def main(argv=None):
     with open(args.metrics) as f:
         table = "".join(line for line in f if line.strip() and line[0] != "#")
     gc = pl.read_csv(io.StringIO(table), separator="\t")
-    colors = pk.PALETTES["plain"].cycle
     pk.use("plain")
-    fig, ax = plt.subplots(figsize=(7, 5))
-    ax.plot(gc["GC"], gc["NORMALIZED_COVERAGE"], color=colors[0])
-    ax.set(xlabel="GC (%)", ylabel="Normalized coverage", xlim=(0, 100))
-    quality = ax.twinx()
-    quality.plot(gc["GC"], gc["MEAN_BASE_QUALITY"], color=colors[1])
-    quality.set_ylabel("Mean base quality", color=colors[1])
-    windows = ax.twinx()
-    windows.fill_between(
-        gc["GC"], gc["WINDOWS"] / gc["WINDOWS"].sum(), color=colors[2], alpha=0.2
-    )
-    windows.set_axis_off()
-    ax.set_title("GC bias (shaded: genome windows by GC)")
+    # Stacked panels instead of ENCODE's twin y axes: the plain look has no right spine.
+    fig, axes = plt.subplots(3, 1, figsize=(7, 8), sharex=True, height_ratios=(2, 1, 1))
+    for ax, column, label in zip(
+        axes,
+        ("NORMALIZED_COVERAGE", "WINDOWS", "MEAN_BASE_QUALITY"),
+        ("Normalized coverage", "Genome windows (fraction)", "Mean base quality"),
+    ):
+        y = gc[column] / gc[column].sum() if column == "WINDOWS" else gc[column]
+        ax.plot(gc["GC"], y)
+        ax.set_ylabel(label)
+        pk.despine(ax)
+    axes[0].set_title("GC bias")
+    axes[-1].set_xlabel("GC (%)")
     pk.save_figure(fig, args.plot)
     plt.close(fig)
 
