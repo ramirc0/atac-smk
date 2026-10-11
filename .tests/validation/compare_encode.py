@@ -1,11 +1,11 @@
-"""Print the integration run's QC beside ENCODE's published values.
+"""Print the validation run's QC beside ENCODE's published values.
 
 ENCODE ran older tools (MACS2 2.2.4, bowtie2 2.3.4.3, Picard) and stopped its
 fragment length QC after 5M records, so values are close, not equal. The
-fixture tests compare step by step on identical inputs. Run from the
-repository root after the integration run:
+integration tests compare step by step on identical inputs. Run from the
+repository root after the validation run:
 
-    pixi run --manifest-path workflow/envs/pixi.toml python .tests/integration/compare_encode.py
+    pixi run --manifest-path workflow/envs/pixi.toml python .tests/validation/compare_encode.py
 """
 
 import argparse
@@ -28,9 +28,9 @@ def build_parser():
         Parser for the compare_encode.py flags.
     """
     p = argparse.ArgumentParser(description="Compare QC with ENCODE's.")
-    p.add_argument("--run", default="results/encode-integration", help="Run directory.")
+    p.add_argument("--run", default="results/encode-validation", help="Run directory.")
     p.add_argument(
-        "--encode", default=".tests/integration/encode_qc.tsv", help="ENCODE QC."
+        "--encode", default=".tests/validation/encode_qc.tsv", help="ENCODE QC."
     )
     return p
 

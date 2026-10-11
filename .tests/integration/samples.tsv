@@ -1,8 +1,4 @@
-# ENCODE ATAC-seq biological replicates, one FASTQ pair each.
-# ENCSR095QNB: GM12878, 100 bp. ENCSR851EBF: heart left ventricle, 100 bp.
-# ENCSR940QJU: dendritic cell, 50 bp.
+# ENCSR095QNB (GM12878) replicates 1 and 2, cut to chr21 and chrM by make_fixture.sh.
 sample_id	r1	r2
-ENCSR095QNB_rep1	/data/projects/encode/data/ENCSR095QNB/ENCFF411MVZ.fastq.gz	/data/projects/encode/data/ENCSR095QNB/ENCFF736ZWY.fastq.gz
-ENCSR095QNB_rep2	/data/projects/encode/data/ENCSR095QNB/ENCFF196VAZ.fastq.gz	/data/projects/encode/data/ENCSR095QNB/ENCFF195FRB.fastq.gz
-ENCSR851EBF_rep1	/data/projects/encode/data/ENCSR851EBF/ENCFF766IGD.fastq.gz	/data/projects/encode/data/ENCSR851EBF/ENCFF075UOA.fastq.gz
-ENCSR940QJU_rep1	/data/projects/encode/data/ENCSR940QJU/ENCFF688ONY.fastq.gz	/data/projects/encode/data/ENCSR940QJU/ENCFF195YXP.fastq.gz
+S1	resources/fixture/S1_R1.fastq.gz	resources/fixture/S1_R2.fastq.gz
+S10	resources/fixture/S10_R1.fastq.gz	resources/fixture/S10_R2.fastq.gz

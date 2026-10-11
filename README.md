@@ -24,8 +24,8 @@ workflow/
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         rule envs (pixi workspace): default, idr and test
 .tests/
-  fixture/               chr21 fixture and tests against ENCODE's own task scripts
-  integration/           four ENCODE replicates end to end, compared with ENCODE's QC
+  integration/           chr21 fixture run, step by step against ENCODE's task scripts
+  validation/            four ENCODE replicates on GRCh38, compared with ENCODE's QC
 profiles/
   local/config.yaml      local execution
   slurm/config.yaml      SLURM (per-rule resources, retried with more memory)
@@ -54,25 +54,25 @@ Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
 
 Both tests use data on the Weng Lab cluster, so they run only there.
 
-`pixi run test` runs the fixture tests. The fixture holds the chr21 and chrM
+`pixi run test` runs the integration tests. The fixture holds the chr21 and chrM
 reads of ENCSR095QNB replicates 1 and 2, named `S1` and `S10`. The tests run the
 workflow on it. Then they run ENCODE's own task scripts, from the
 `encodedcc/atac-seq-pipeline:v2.2.3` image, on the same inputs, and compare.
 Build the fixture once and pull the image once:
 
 ```bash
-pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/fixture/make_fixture.sh
+pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/integration/make_fixture.sh
 apptainer pull /data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif \
     docker://encodedcc/atac-seq-pipeline:v2.2.3   # or set ENCODE_SIF
 pixi run test
 ```
 
-The integration test runs four ENCODE replicates on full GRCh38, then prints
+The validation runs four ENCODE replicates on full GRCh38, then prints
 their QC beside ENCODE's published values:
 
 ```bash
-snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml
-pixi run --manifest-path workflow/envs/pixi.toml python .tests/integration/compare_encode.py
+snakemake --profile profiles/slurm --configfile .tests/validation/config.yaml
+pixi run --manifest-path workflow/envs/pixi.toml python .tests/validation/compare_encode.py
 ```
 
 ## Inputs

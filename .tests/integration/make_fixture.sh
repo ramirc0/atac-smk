@@ -3,7 +3,7 @@
 # the chr21 + chrM genome, and the ENCODE references cut to those contigs.
 # S1 and S10 are ENCSR095QNB replicates 1 and 2. Their IDs prefix one another on purpose.
 # Needs the Weng Lab ENCODE mirror. Run from the repository root:
-#   pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/fixture/make_fixture.sh
+#   pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/integration/make_fixture.sh
 set -euo pipefail
 
 out=resources/fixture

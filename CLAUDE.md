@@ -10,7 +10,7 @@ pixi run lint                                # ruff check, ruff format --check, 
 pixi run snakemake -n -p --profile profiles/local
 pixi run snakemake --profile profiles/local
 pixi run test                                # chr21 fixture vs ENCODE's task scripts (TMPDIR off /tmp)
-pixi run snakemake --profile profiles/slurm --configfile .tests/integration/config.yaml  # ENCODE end-to-end test
+pixi run snakemake --profile profiles/slurm --configfile .tests/validation/config.yaml  # ENCODE validation run
 ```
 
 ## Two pixi workspaces
@@ -25,7 +25,7 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 ## Match ENCODE
 
 - Every step reproduces ENCODE ATAC-seq pipeline v2.2.3 (`~/Git_Repos/atac-seq-pipeline`), single-replicate flow. README.md "Differences from ENCODE" lists the deliberate gaps.
-- `.tests/fixture/test_encode.py` checks each step against ENCODE's own task script on the same inputs. A step change MUST keep its test passing.
+- `.tests/integration/test_encode.py` checks each step against ENCODE's own task script on the same inputs. A step change MUST keep its test passing.
 - A bug fix starts with a test that fails on the old code.
 - Correctness beats parity. Where ENCODE's tool has a known bug, use the fixed version and list the gap in README.md.
 - Tag `pre-template` is the legacy pipeline. Tag `post-template` is the same outputs on the template layout, the last commit before the ENCODE port.
@@ -46,4 +46,4 @@ pixi run snakemake --profile profiles/slurm --configfile .tests/integration/conf
 ## Verifying a change
 
 1. `pixi run lint` and `pixi run test`. The login node's `/tmp` fills up: set `TMPDIR` to `/data` scratch.
-2. For a big change, run the integration test on SLURM, then `.tests/integration/compare_encode.py`.
+2. For a big change, run the validation on SLURM, then `.tests/validation/compare_encode.py`.

@@ -1,4 +1,4 @@
-# ENCODE's published QC for the integration replicates (ENCODE4 v1.9.1/1.9.2), from the ENCODE metadata of 2026-10-09.
+# ENCODE's published QC for the validation replicates (ENCODE4 v1.9.1/1.9.2), from the ENCODE metadata of 2026-10-09.
 # Peak files are ENCODE's blacklist-filtered sets for each replicate's pseudoreplicates.
 sample_id	nrf	pbc1	pbc2	frac_mito	frac_nfr	nfr_mono_ratio	frip_overlap	frip_idr	overlap_peaks	idr_peaks	overlap_file	idr_file
 ENCSR095QNB_rep1	0.797448	0.805035	5.211989	0.139299	0.381178	1.349777	0.614691	0.552446	166988	107121	ENCSR095QNB/ENCFF851FBD.bed.gz	ENCSR095QNB/ENCFF917REN.bed.gz

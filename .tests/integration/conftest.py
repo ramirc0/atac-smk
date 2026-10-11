@@ -1,4 +1,4 @@
-"""Helpers for the fixture tests: the workflow run, single rules, and ENCODE's task scripts."""
+"""Helpers for the integration tests: the workflow run, single rules, and ENCODE's task scripts."""
 
 import gzip
 import os
@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-CONFIG = ".tests/fixture/config.yaml"
+CONFIG = ".tests/integration/config.yaml"
 RUN = ROOT / "results-fixture/fixture"
 REFS = ROOT / "results-fixture/refs/bowtie2_build"
 FIXTURE = ROOT / "resources/fixture"
@@ -60,7 +60,7 @@ def run():
         Run directory, ``results-fixture/fixture``.
     """
     if not (FIXTURE / "genome.fa").exists():
-        pytest.skip("fixture missing: run .tests/fixture/make_fixture.sh")
+        pytest.skip("fixture missing: run .tests/integration/make_fixture.sh")
     # Some tests read temp files, such as the trimmed reads.
     done = snakemake("--profile", "profiles/local", "--configfile", CONFIG, "--notemp")
     assert done.returncode == 0, done.stderr[-5000:]
