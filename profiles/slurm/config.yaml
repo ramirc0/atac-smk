@@ -29,6 +29,7 @@ set-threads:              # single-threaded rules get the default, 1
   tagalign: 8
   frac_mito: 22
   jsd: 2
+  zscore: 2
 
 set-resources:              # from peak RSS of the ENCODE validation run
   bowtie2_build:

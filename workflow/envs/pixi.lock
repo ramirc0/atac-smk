@@ -16,6 +16,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/bioconda/linux-64/bedtools-2.31.1-h13024bc_3.tar.bz2
+      - conda: https://conda.anaconda.org/bioconda/linux-64/bigtools-0.5.8-hfa8f182_0.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/bowtie2-2.5.5-h63e9258_1.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/cutadapt-5.2-py313hd978853_2.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/deeptools-4.0.0-py313h9a1e870_0.conda
@@ -381,6 +382,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/bioconda/linux-64/bedtools-2.31.1-h13024bc_3.tar.bz2
+      - conda: https://conda.anaconda.org/bioconda/linux-64/bigtools-0.5.8-hfa8f182_0.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/bowtie2-2.5.5-h63e9258_1.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/cutadapt-5.2-py313hd978853_2.conda
       - conda: https://conda.anaconda.org/bioconda/linux-64/deeptools-4.0.0-py313h9a1e870_0.conda
@@ -680,6 +682,22 @@ packages:
     - bedtools >=2.31.1,<3.0a0
   size: 1607626
   timestamp: 1733852519791
+- conda: https://conda.anaconda.org/bioconda/linux-64/bigtools-0.5.8-hfa8f182_0.conda
+  sha256: b007e7a5333ad7addfd626727de51af3ffb55e356c3e6ba760ac35f1f00e210a
+  md5: 6190c15ffccc2fe59a9b13c2d4cbd8b4
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  purls: []
+  run_exports:
+    weak:
+    - bigtools >=0.5.8,<0.6.0a0
+  size: 4082703
+  timestamp: 1780773979587
 - conda: https://conda.anaconda.org/bioconda/linux-64/bowtie2-2.5.5-h63e9258_1.conda
   sha256: 805cdd4718dcefde3d9b2b2c8140a4a5a36c983e4467ee7d22e4b9ae5cde7116
   md5: 75b849619e6a685fc0322bf113b8df35
@@ -695,6 +713,7 @@ packages:
   - zstd >=1.5.7,<1.6.0a0
   license: GPL-3.0-or-later
   license_family: GPL3
+  purls: []
   run_exports:
     weak:
     - bowtie2 >=2.5.5,<3.0a0
@@ -3580,7 +3599,8 @@ packages:
   license: LGPL-3.0-only
   license_family: LGPL
   purls:
-  - pkg:pypi/pyside6?source=compressed-mapping
+  - pkg:pypi/pyside6?source=hash-mapping
+  - pkg:pypi/shiboken6?source=hash-mapping
   run_exports: {}
   size: 13947145
   timestamp: 1788745031498
@@ -4598,8 +4618,7 @@ packages:
   - cached_property >=2.0.1,<2.0.2.0a0
   license: BSD-3-Clause
   license_family: BSD
-  purls:
-  - pkg:pypi/cached-property?source=compressed-mapping
+  purls: []
   run_exports: {}
   size: 3720
   timestamp: 1787678456483
@@ -4612,7 +4631,7 @@ packages:
   license: BSD-3-Clause
   license_family: BSD
   purls:
-  - pkg:pypi/cached-property?source=compressed-mapping
+  - pkg:pypi/cached-property?source=hash-mapping
   run_exports: {}
   size: 16597
   timestamp: 1787678456483
@@ -4853,7 +4872,7 @@ packages:
   license: MIT
   license_family: MIT
   purls:
-  - pkg:pypi/imagesize?source=compressed-mapping
+  - pkg:pypi/imagesize?source=hash-mapping
   run_exports: {}
   size: 21467
   timestamp: 1787649248672

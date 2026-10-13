@@ -55,6 +55,7 @@ rule all:
                 f"{OUTDIR}/{{sample}}/signal/{{sample}}.fc.bigWig",
                 f"{OUTDIR}/{{sample}}/signal/{{sample}}.pval.bigWig",
                 f"{OUTDIR}/{{sample}}/signal/{{sample}}.pileup.bigWig",
+                f"{OUTDIR}/{{sample}}/zscore/{{sample}}.parquet",
                 f"{OUTDIR}/{{sample}}/idr/{{sample}}.idr.svg",
                 f"{OUTDIR}/{{sample}}/frip/{{sample}}.tsv",
                 f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.svg",

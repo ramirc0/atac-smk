@@ -20,9 +20,11 @@ SIF = Path(
         "/data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif",
     )
 )
+CCRE_TOOLKIT = Path.home() / "Git_Repos/ENCODE-cCREs/Version-4/cCRE-Pipeline/Toolkit"
 CHRSZ = REFS / "reference.chromsizes"
 BLACKLIST = FIXTURE / "ENCFF356LFX.bed.gz"
 TSS = FIXTURE / "ENCFF493CCB.bed.gz"
+ANCHORS = FIXTURE / "GRCh38-Anchors.bed"
 
 
 def snakemake(*args, cwd=ROOT):

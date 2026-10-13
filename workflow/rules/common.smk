@@ -26,6 +26,7 @@ BLACKLIST = config["references"]["blacklist"]
 DHS = config["references"]["dhs"]
 PROMOTERS = config["references"]["promoters"]
 ENHANCERS = config["references"]["enhancers"]
+ANCHORS = config["references"]["anchors"]
 
 BOWTIE2_INDEX = f"{REFDIR}/bowtie2_build/reference"
 MITO_INDEX = f"{REFDIR}/bowtie2_build_mito/mito"

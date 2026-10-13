@@ -3,9 +3,12 @@
 import json
 import subprocess
 
+import polars as pl
 import pytest
 from conftest import (
+    ANCHORS,
     BLACKLIST,
+    CCRE_TOOLKIT,
     CHRSZ,
     FIXTURE,
     REFS,
@@ -177,6 +180,33 @@ def test_pvalue_track_matches_encode(run):
     ours = bigwig_stats(run / "S1/signal/S1.pval.bigWig")
     assert ours["mean"] == pytest.approx(theirs["mean"], rel=0.02)
     assert ours["max"] == pytest.approx(theirs["max"], rel=0.02)
+
+
+def test_zscores_match_encode_ccre_pipeline(run):
+    """Check fold-change z-scores against the ENCODE4 cCRE pipeline's script.
+
+    UCSC's bigWigAverageOverBed rounds each anchor's mean to six significant
+    digits before ENCODE z-scores it. bigtools does not, so values agree to
+    1e-5, and anchors tied in ENCODE's ranking may split in ours.
+    """
+    bw = run / "S1/signal/S1.fc.bigWig"
+    script = CCRE_TOOLKIT / "log-zscore-normalization.py"
+    out = encode(
+        "zscore/S1",
+        [bw, ANCHORS, script],
+        f"bigWigAverageOverBed {bw.name} {ANCHORS.name} averages.tab && "
+        f"python3 {script.name} averages.tab > S1.zscore.txt",
+    )
+    # Each row holds an anchor, its z-score, signal and log10 signal.
+    rows = sorted(line.split() for line in lines(out / "S1.zscore.txt"))
+    z = pl.Series([float(r[1]) for r in rows])
+    ours = pl.read_parquet(run / "S1/zscore/S1.parquet")
+    assert first_difference(ours["anchor"].to_list(), [r[0] for r in rows]) is None
+    assert ours["zscore"].to_list() == pytest.approx(z.to_list(), abs=1e-5)
+    signal = [float(r[2]) for r in rows]
+    assert ours["signal"].to_list() == pytest.approx(signal, rel=1e-5)
+    # Read in our rank order, ENCODE's z-scores never rise.
+    assert z.gather(ours["rank"].arg_sort()).diff().drop_nulls().le(0).all()
 
 
 def peak_files(run):

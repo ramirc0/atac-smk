@@ -1,4 +1,5 @@
-# MACS3 signal tracks as bigWig, as the ENCODE ATAC-seq pipeline makes them.
+# MACS3 signal tracks as bigWig, as the ENCODE ATAC-seq pipeline makes them, and
+# fold-change z-scores over the cCRE anchors.
 
 
 # One job per track, so the three run in parallel. The bedGraphs are per million
@@ -54,4 +55,31 @@ rule signal:
             }}' \
             > "$tmp/sorted.bdg"
         bedGraphToBigWig "$tmp/sorted.bdg" {input.chromsizes:q} {output:q}
+        """
+
+
+# The ENCODE4 cCRE pipeline scores ATAC over unpadded anchors. SCREEN's ATAC
+# z-scores come from ENCODE's fold-change track.
+rule zscore:
+    input:
+        bigwig=f"{OUTDIR}/{{sample}}/signal/{{sample}}.fc.bigWig",
+        anchors=ANCHORS,
+    output:
+        f"{OUTDIR}/{{sample}}/zscore/{{sample}}.parquet",
+    log:
+        f"{LOGDIR}/zscore/{{sample}}.txt",
+    benchmark:
+        f"{BENCHDIR}/zscore/{{sample}}.tsv"
+    software:
+        SOFTWARE_ENV
+    shell:
+        r"""
+        exec &> >(tee {log:q})
+
+        bigwigaverageoverbed \
+            --nthreads {threads:q} \
+            {input.bigwig:q} \
+            {input.anchors:q} \
+            - \
+            | python workflow/scripts/zscore.py --output {output:q}
         """

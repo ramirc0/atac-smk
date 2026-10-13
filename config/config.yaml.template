@@ -12,6 +12,7 @@ references:
   dhs: resources/ENCFF304XEX.bed.gz
   promoters: resources/ENCFF140XLU.bed.gz
   enhancers: resources/ENCFF212UAV.bed.gz
+  anchors: resources/GRCh38-Anchors.bed
 
 params:
   multimapping: 4        # alignments a read may have; bowtie2 runs with -k multimapping+1

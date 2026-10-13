@@ -20,6 +20,7 @@ for accession in ENCFF493CCB ENCFF356LFX ENCFF304XEX ENCFF140XLU ENCFF212UAV; do
     | gzip -n \
     > "$out/$accession.bed.gz"
 done
+awk '$1 == "chr21"' "$refs/GRCh38-Anchors.bed" > "$out/GRCh38-Anchors.bed"
 
 # Keeps pairs whose first mate ENCODE placed on chr21, and every tenth on chrM.
 while read -r sample bam r1 r2; do

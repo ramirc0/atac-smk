@@ -5,7 +5,8 @@ ATAC-seq. It reproduces the single-replicate flow of the
 [ENCODE ATAC-seq pipeline](https://github.com/ENCODE-DCC/atac-seq-pipeline)
 v2.2.3, step by step. Reads are trimmed and aligned. The filtered alignments
 feed signal tracks, peak calls, IDR and naive overlap on pseudoreplicates, and
-ENCODE's library and enrichment QC.
+ENCODE's library and enrichment QC. Fold change is z-scored over the ENCODE
+cCRE anchors, as the ENCODE4 cCRE pipeline does.
 
 ## Layout
 
@@ -19,7 +20,7 @@ workflow/
     common.smk           config, sample sheet, path constants
     preprocess.smk       trimming, bowtie2 indexes and alignment, filtering, tagAlign
     peaks.smk            pseudoreplicates, MACS3 peaks, blacklist filter, IDR, overlap
-    signal.smk           fold-change, p-value and pileup bigWigs
+    signal.smk           fold-change, p-value and pileup bigWigs, anchor z-scores
     qc.smk               PBC/NRF, fragment lengths, TSS, FRiP, mito, annotation, GC, JSD
   scripts/               argparse scripts, each with build_parser() + main()
   envs/pixi.toml         rule envs (pixi workspace): default, idr and test
@@ -58,12 +59,15 @@ Both tests use data on the Weng Lab cluster, so they run only there.
 reads of ENCSR095QNB replicates 1 and 2, named `S1` and `S10`. The tests run the
 workflow on it. Then they run ENCODE's own task scripts, from the
 `encodedcc/atac-seq-pipeline:v2.2.3` image, on the same inputs, and compare.
-Build the fixture once and pull the image once:
+The z-score test runs the ENCODE4 cCRE pipeline's script in that image, from a
+clone of [ENCODE-cCREs](https://github.com/weng-lab/ENCODE-cCREs). Set these up
+once:
 
 ```bash
 pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/integration/make_fixture.sh
 apptainer pull /data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif \
     docker://encodedcc/atac-seq-pipeline:v2.2.3   # or set ENCODE_SIF
+git clone https://github.com/weng-lab/ENCODE-cCREs ~/Git_Repos/ENCODE-cCREs
 pixi run test
 ```
 
@@ -92,6 +96,11 @@ The references are ENCODE's GRCh38 files. Download them from
 | `references.dhs` | Universal DHS regions, ENCFF304XEX |
 | `references.promoters` | Promoters, ENCFF140XLU |
 | `references.enhancers` | Enhancers, ENCFF212UAV |
+| `references.anchors` | cCRE registry V4 anchors (rDHSs and TF rClusters), `GRCh38-Anchors.bed` |
+
+The anchors are not on the portal. The Weng Lab keeps them at
+`/data/projects/encode/Registry/V4/GRCh38/GRCh38-Anchors.bed`: 2,950,228 rows,
+MD5 `9c5d57a3de8f09b27e9c00661801eddb`.
 
 ## Configuration
 
@@ -141,6 +150,10 @@ Signal, in `signal.smk`:
 
 - `signal` writes fold-change and p-value bigWigs with `macs3 bdgcmp`, plus a
   pileup bigWig in signal per million reads.
+- `zscore` averages fold change over each anchor with bigtools
+  `bigwigaverageoverbed`. It z-scores log10 of the non-zero averages with their
+  mean and population standard deviation, as the ENCODE4 cCRE pipeline does.
+  Anchors without signal get -10.
 
 QC, in `qc.smk`:
 
@@ -172,6 +185,7 @@ Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once u
 | `idr/` | IDR peaks (filtered), all IDR scores, IDR plot |
 | `overlap/` | Naive overlap peaks (filtered) |
 | `signal/` | Fold-change, p-value and pileup bigWigs |
+| `zscore/` | Per-anchor fold-change z-score, mean signal and rank, as parquet |
 | `pbc_qc/` | NRF, PBC1 and PBC2 JSON |
 | `frag_len/` | ENCODE's `nucleosomal.qc`, distribution plot |
 | `tss_enrichment/` | ENCODE's `tss_enrich.qc`, profile plot |
@@ -233,6 +247,9 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Fragment length QC reads every record. ENCODE stops after 5M, mostly chr1.
 - One MACS3 call per sample gives peaks and signal. ENCODE runs the same call twice.
 - There is no replicate pooling or true-replicate IDR. Each sample is one replicate.
+- Anchor z-scores use bigtools' unrounded means. The ENCODE4 cCRE pipeline's UCSC
+  tool rounds them to six significant digits. Z-scores agree to 1e-5, and anchors
+  tied in its ranks may split.
 
 ## References
 
@@ -241,6 +258,10 @@ Buenrostro, Jason D., Paul G. Giresi, Lisa C. Zaba, Howard Y. Chang, and William
 Chen, Shifu. 2025. “Fastp 1.0: An Ultra-Fast All-Round Tool for FASTQ Data Quality Control and Preprocessing.” iMeta 4 (5): e70078. https://doi.org/10.1002/imt2.70078.
 
 Danecek, Petr, James K. Bonfield, Jennifer Liddle, et al. 2021. “Twelve Years of SAMtools and BCFtools.” GigaScience 10 (2): giab008. https://doi.org/10.1093/gigascience/giab008.
+
+ENCODE Project Consortium, Jill E. Moore, Michael J. Purcaro, et al. 2020. “Expanded Encyclopaedias of DNA Elements in the Human and Mouse Genomes.” Nature 583 (7818): 699–710. https://doi.org/10.1038/s41586-020-2493-4.
+
+Huey, Jack D., and Nezar Abdennur. 2024. “Bigtools: A High-Performance BigWig and BigBed Library in Rust.” Bioinformatics (Oxford, England) 40 (6): btae350. https://doi.org/10.1093/bioinformatics/btae350.
 
 Langmead, Ben, and Steven L. Salzberg. 2012. “Fast Gapped-Read Alignment with Bowtie 2.” Nature Methods 9 (4): 357–59. https://doi.org/10.1038/nmeth.1923.
 

@@ -12,6 +12,7 @@ references:
   dhs: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF304XEX.bed.gz
   promoters: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF140XLU.bed.gz
   enhancers: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF212UAV.bed.gz
+  anchors: /data/zusers/ramirezc/atac-smk-refs/GRCh38/GRCh38-Anchors.bed
 
 params:
   multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1
