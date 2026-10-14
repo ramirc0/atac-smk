@@ -29,11 +29,17 @@ def notify_slack(text):
     )
 
 
+# The pixi plugin installs the envs inside each job. Parallel SLURM jobs then race
+# on a fresh or relocked env, so install them once before any job starts.
+# Snakemake keeps only the last onstart, so the Slack start message goes here too.
+onstart:
+    shell("pixi install --manifest-path {workflow.basedir:q}/envs/pixi.toml --all --locked")
+    if SLACK_WEBHOOK_URL:
+        notify_slack("Snakemake Started 🚀")
+
+
 if SLACK_WEBHOOK_URL:
     print("SLACK_WEBHOOK_URL found")
-
-    onstart:
-        notify_slack("Snakemake Started 🚀")
 
     onsuccess:
         notify_slack("Snakemake Finished Successfully! ✅")

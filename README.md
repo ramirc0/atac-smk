@@ -211,8 +211,9 @@ The launcher env (`pixi.toml` at the root) has Snakemake main and its plugins
 for pixi deployment and SLURM. The rule envs live in a second pixi workspace,
 `workflow/envs/`. Its `pixi.lock` pins every package.
 `default` runs most rules. `idr` runs IDR on the Python 3.9 / NumPy 1.19 stack it
-needs. `test` adds pytest and seqkit. pixi MUST be on `PATH`. Jobs install the
-envs on first use.
+needs. `test` adds pytest and seqkit. pixi MUST be on `PATH`. An `onstart` hook
+installs the envs before the first job. Parallel SLURM jobs would otherwise race
+to install them.
 
 Add a dependency with `pixi add <pkg>` in `workflow/envs/`. After a hand edit,
 run `pixi lock` there (rules use `locked=True`). `pixi update` moves the lock to
