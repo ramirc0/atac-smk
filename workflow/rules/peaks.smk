@@ -31,6 +31,8 @@ FORMAT_PEAKS = r"""
             > "$tmp/capped"
         bedClip -truncate "$tmp/capped" {input.chromsizes:q} "$tmp/clipped"
         python -m zlib_ng.gzip_ng -cn "$tmp/clipped" > {output.peaks:q}
+
+        sync {output:q}
 """
 
 
@@ -70,6 +72,8 @@ rule pseudoreps:
         }}
         unpair "$tmp/pr00" > {output.pr1:q}
         unpair "$tmp/pr01" > {output.pr2:q}
+
+        sync {output:q}
         """
 
 
@@ -155,6 +159,8 @@ rule blacklist_filter:
             | awk '/chr[0-9XY]+([^A-Za-z0-9_]|$)/' \
             | python -m zlib_ng.gzip_ng -cn \
             > {output:q}
+
+        sync {output:q}
         """
 
 
@@ -206,6 +212,8 @@ rule idr:
             | cut -f 1-10 \
             | python -m zlib_ng.gzip_ng -cn \
             > {output.peaks:q}
+
+        sync {output:q}
         """
 
 
@@ -232,6 +240,8 @@ rule plot_idr:
             --threshold {params.threshold:q} \
             --title {wildcards.sample:q} \
             --output {output.svg:q}
+
+        sync {output:q}
         """
 
 
@@ -275,4 +285,6 @@ rule overlap:
             | half \
             | python -m zlib_ng.gzip_ng -cn \
             > {output:q}
+
+        sync {output:q}
         """

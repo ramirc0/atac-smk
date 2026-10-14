@@ -21,6 +21,8 @@ rule pbc_qc:
 
         bedtools bamtobed -bedpe -i {input:q} \
             | python workflow/scripts/pbc_qc.py --mito {params.mito:q} --output {output:q}
+
+        sync {output:q}
         """
 
 
@@ -59,6 +61,8 @@ rule frag_len:
             --histogram "$tmp/hist.txt" \
             --qc {output.qc:q} \
             --plot {output.plot:q}
+
+        sync {output:q}
         """
 
 
@@ -90,6 +94,8 @@ rule tss_enrichment:
             --fastq {input.r1:q} \
             --qc {output.qc:q} \
             --plot {output.plot:q}
+
+        sync {output:q}
         """
 
 
@@ -132,6 +138,8 @@ rule frip:
             frip idr {input.idr:q}
             frip overlap {input.overlap:q}
         }} > {output:q}
+
+        sync {output:q}
         """
 
 
@@ -181,6 +189,8 @@ rule frac_mito:
         awk -v n="$non_mito" -v m="$mito" 'BEGIN {{
             printf "non_mito_reads\t%d\nmito_reads\t%d\nfrac_mito_reads\t%.6f\n", n, m, m / (n + m)
         }}' > {output:q}
+
+        sync {output:q}
         """
 
 
@@ -219,6 +229,8 @@ rule annot_enrich:
             fraction fraction_of_reads_in_promoter_regions {input.promoters:q}
             fraction fraction_of_reads_in_enhancer_regions {input.enhancers:q}
         }} > {output:q}
+
+        sync {output:q}
         """
 
 
@@ -257,6 +269,8 @@ rule gc_bias:
             -VERBOSITY ERROR \
             -QUIET true
         python workflow/scripts/plot_gc.py --metrics {output.metrics:q} --plot {output.plot:q}
+
+        sync {output:q}
         """
 
 
@@ -298,4 +312,6 @@ rule jsd:
             --counts "$tmp/counts.tab" \
             --title {wildcards.sample:q} \
             --plot {output.plot:q}
+
+        sync {output:q}
         """

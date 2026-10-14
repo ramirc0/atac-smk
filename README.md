@@ -233,6 +233,9 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 - Config reaches `shell` through `params:` (a `lambda`), never directly.
 - `input:` and `output:` are literal path strings. All paths are relative.
 - Rules tee logs to file and terminal (`exec &> >(tee {log:q})`).
+- Shell blocks end with `sync {output:q}`. On a shared filesystem, Snakemake's
+  first stat of an output from the submit host can otherwise wait for the
+  writing node to flush it.
 - Every rule has `log:` and `benchmark:`. Each names its pixi env in `software:`.
 - Plots use [poikilos](https://github.com/ramirc0/poikilos) with the `plain`
   theme. `pk.save_figure()` writes the SVG and PNG pair. Rules declare both.

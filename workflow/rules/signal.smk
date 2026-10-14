@@ -55,6 +55,8 @@ rule signal:
             }}' \
             > "$tmp/sorted.bdg"
         bedGraphToBigWig "$tmp/sorted.bdg" {input.chromsizes:q} {output:q}
+
+        sync {output:q}
         """
 
 
@@ -82,4 +84,6 @@ rule zscore:
             {input.anchors:q} \
             - \
             | python workflow/scripts/zscore.py --output {output:q}
+
+        sync {output:q}
         """

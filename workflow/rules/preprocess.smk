@@ -29,6 +29,8 @@ rule fastp_qc:
             -h {output.html:q} \
             -j {output.json:q} \
             -w {threads}
+
+        sync {output:q}
         """
 
 
@@ -86,6 +88,8 @@ rule trim:
             cp {input.r2:q} {output.r2:q}
             echo '{{}}' > {output.json:q}
         fi
+
+        sync {output:q}
         """
 
 
@@ -121,6 +125,8 @@ rule bowtie2_build:
             --threads {threads:q} \
             {input:q} \
             {params.prefix:q}
+
+        sync {output:q}
         """
 
 
@@ -149,6 +155,8 @@ rule bowtie2_build_mito:
 
         samtools faidx {input:q} {params.mito:q} > "$tmp/mito.fa"
         bowtie2-build --threads {threads:q} "$tmp/mito.fa" {params.prefix:q}
+
+        sync {output:q}
         """
 
 
@@ -194,6 +202,8 @@ rule bowtie2_align:
                 -o {output.bam:q}
         samtools index -@ {threads:q} {output.bam:q}
         samtools flagstat -@ {threads:q} --output-fmt json {output.bam:q} > {output.flagstat:q}
+
+        sync {output:q}
         """
 
 
@@ -258,6 +268,8 @@ rule filter:
             "$tmp/dupmark.bam"
         samtools index -@ {threads:q} {output.bam:q}
         samtools flagstat -@ {threads:q} --output-fmt json {output.bam:q} > {output.flagstat:q}
+
+        sync {output:q}
         """
 
 
@@ -297,4 +309,6 @@ rule tagalign:
                 {{ tag($1, $2, $3, $9); tag($4, $5, $6, $10) }}' \
             | python -m zlib_ng.gzip_ng -cn \
             > {output.tagalign:q}
+
+        sync {output:q}
         """
