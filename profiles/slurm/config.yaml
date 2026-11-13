@@ -26,7 +26,6 @@ default-resources:
   slurm_partition: 4hours
   runtime: 240m
   mem_mb: 8000 * attempt
-  constraint: cascadelake
   slurm_extra: "--cpu-freq=High-High:Performance"
 
 set-threads:              # single-threaded rules get the default, 1

@@ -241,7 +241,7 @@ snakemake --profile profiles/slurm --configfile config/<run_id>/config.yaml     
 ```
 
 Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
-cluster settings, such as partitions and the `cascadelake` constraint. Adapt them
+cluster settings, such as partitions and excluded nodes. Adapt them
 for another cluster with the
 [SLURM executor docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html).
 Tune `set-resources` from the `benchmarks/<run_id>/` TSVs after a first run.
