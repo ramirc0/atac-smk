@@ -7,12 +7,12 @@ tmp_dir: .tmp
 
 references:
   fasta: /data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
-  tss: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF493CCB.bed.gz
-  blacklist: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF356LFX.bed.gz
-  dhs: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF304XEX.bed.gz
-  promoters: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF140XLU.bed.gz
-  enhancers: /data/zusers/ramirezc/atac-smk-refs/GRCh38/ENCFF212UAV.bed.gz
-  anchors: /data/zusers/ramirezc/atac-smk-refs/GRCh38/GRCh38-Anchors.bed
+  tss: /data/zusers/ramirezc/static/hg38/annotation/ENCFF493CCB.bed.gz
+  blacklist: /data/zusers/ramirezc/static/hg38/blacklist/ENCFF356LFX.bed
+  dhs: /data/zusers/ramirezc/static/hg38/regulatory/ENCFF304XEX.bed.gz
+  promoters: /data/zusers/ramirezc/static/hg38/regulatory/ENCFF140XLU.bed.gz
+  enhancers: /data/zusers/ramirezc/static/hg38/regulatory/ENCFF212UAV.bed.gz
+  anchors: /data/zusers/ramirezc/static/hg38/regulatory/GRCh38-Anchors.bed
 
 params:
   multimapping: 4         # alignments a read may have; bowtie2 runs with -k multimapping+1

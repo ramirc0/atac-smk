@@ -8,19 +8,22 @@ set -euo pipefail
 
 out=resources/fixture
 encode=/data/projects/encode/data/ENCSR095QNB
-refs=/data/zusers/ramirezc/atac-smk-refs/GRCh38
+refs=/data/zusers/ramirezc/static/hg38
 fasta=/data/zusers/ramirezc/atac-smk/resources/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
 mkdir -p "$out"
 
 samtools faidx "$fasta" chr21 chrM > "$out/genome.fa"
 
-for accession in ENCFF493CCB ENCFF356LFX ENCFF304XEX ENCFF140XLU ENCFF212UAV; do
-    zcat "$refs/$accession.bed.gz" \
+for path in annotation/ENCFF493CCB.bed.gz blacklist/ENCFF356LFX.bed \
+    regulatory/ENCFF304XEX.bed.gz regulatory/ENCFF140XLU.bed.gz regulatory/ENCFF212UAV.bed.gz; do
+    accession=$(basename "$path")
+    accession=${accession%%.*}
+    zcat -f "$refs/$path" \
     | awk '$1 == "chr21" || $1 == "chrM"' \
     | gzip -n \
     > "$out/$accession.bed.gz"
 done
-awk '$1 == "chr21"' "$refs/GRCh38-Anchors.bed" > "$out/GRCh38-Anchors.bed"
+awk '$1 == "chr21"' "$refs/regulatory/GRCh38-Anchors.bed" > "$out/GRCh38-Anchors.bed"
 
 # Keeps pairs whose first mate ENCODE placed on chr21, and every tenth on chrM.
 while read -r sample bam r1 r2; do
