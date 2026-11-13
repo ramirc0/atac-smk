@@ -2,6 +2,7 @@
 name = "atac-smk-envs"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]
+exclude-newer = "7d"
 
 [dependencies]
 python = ">=3.13"
@@ -52,3 +53,12 @@ seqkit = "*"
 [environments]
 idr = { features = ["idr"], no-default-feature = true }
 test = { features = ["test"] }
+
+[exclude-newer]
+ca-certificates = "0d"
+certifi = "0d"
+pip = "0d"
+
+[pypi-exclude-newer]
+certifi = "0d"
+pip = "0d"
