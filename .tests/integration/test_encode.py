@@ -361,8 +361,11 @@ def test_fragment_length_qc_matches_encode(run):
     ours = nucleosomal_qc(run / "S1/frag_len/S1.nucleosomal.qc")
     theirs = nucleosomal_qc(out / "S1.nucleosomal.qc")
     assert ours.keys() == theirs.keys()
-    for metric, value in theirs.items():
-        assert ours[metric] == pytest.approx(value, rel=1e-9)
+    for metric, row in theirs.items():
+        expected = tuple(
+            pytest.approx(x, rel=1e-9) if isinstance(x, float) else x for x in row
+        )
+        assert ours[metric] == expected
 
 
 def test_tagalign_job_fails_on_a_corrupt_bam(tmp_path):
