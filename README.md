@@ -12,8 +12,9 @@ cCRE anchors, as the ENCODE4 cCRE pipeline does.
 
 ```
 config/
-  config.yaml.template   parameters + paths; copy to config.yaml (gitignored)
-  samples.example.tsv    one row per sample: sample_id, r1, r2
+  config.yaml.template   parameters + paths; copy to <run_id>/config.yaml
+  samples.tsv.template   one row per sample: sample_id, r1, r2
+  <run_id>/              one run's config.yaml and samples.tsv (gitignored)
 workflow/
   Snakefile              includes the rule files, defines rule all
   rules/
@@ -36,13 +37,17 @@ pyproject.toml           ruff + numpydoc config
 
 ## Running
 
+Each run keeps its config and sample sheet in `config/<run_id>/`. Set `run_id`
+and `samples` in the config to match.
+
 ```bash
-cp config/config.yaml.template config/config.yaml  # then edit
-cp config/samples.example.tsv config/samples.tsv   # then edit
-pixi shell                                         # launcher env
-snakemake -n -p --profile profiles/local           # dry run
-snakemake --profile profiles/local                 # local
-snakemake --profile profiles/slurm                 # SLURM
+mkdir -p config/<run_id>
+cp config/config.yaml.template config/<run_id>/config.yaml  # then edit
+cp config/samples.tsv.template config/<run_id>/samples.tsv  # then edit
+pixi shell                                                  # launcher env
+snakemake -n -p --profile profiles/local --configfile config/<run_id>/config.yaml  # dry run
+snakemake --profile profiles/local --configfile config/<run_id>/config.yaml        # local
+snakemake --profile profiles/slurm --configfile config/<run_id>/config.yaml        # SLURM
 ```
 
 Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
