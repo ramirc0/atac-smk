@@ -23,7 +23,7 @@ slurm-init-seconds-before-status-checks: 10
 slurm-exclude-failed-nodes: z1024,z1056,z1072,z1076,z1081
 
 default-resources:
-  slurm_partition: 4hours
+  slurm_partition: 4hours,12hours   # z1022-1029 are only in 12hours
   runtime: 240m
   mem_mb: 8000 * attempt
   slurm_extra: "--cpu-freq=High-High:Performance"
