@@ -20,7 +20,7 @@ rule pbc_qc:
         exec &> >(tee {log:q})
 
         bedtools bamtobed -bedpe -i {input:q} \
-            | python workflow/scripts/pbc_qc.py --mito {params.mito:q} --output {output:q}
+            | python {workflow.basedir:q}/scripts/pbc_qc.py --mito {params.mito:q} --output {output:q}
 
         sync {output:q}
         """
@@ -57,7 +57,7 @@ rule frag_len:
             -W 1000 \
             -VERBOSITY ERROR \
             -QUIET true
-        python workflow/scripts/fraglen_qc.py \
+        python {workflow.basedir:q}/scripts/fraglen_qc.py \
             --histogram "$tmp/hist.txt" \
             --qc {output.qc:q} \
             --plot {output.plot:q}
@@ -87,7 +87,7 @@ rule tss_enrichment:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/tss_enrichment.py \
+        python {workflow.basedir:q}/scripts/tss_enrichment.py \
             --bam {input.bam:q} \
             --tss {input.tss:q} \
             --chromsizes {input.chromsizes:q} \
@@ -268,7 +268,7 @@ rule gc_bias:
             -ASSUME_SORTED false \
             -VERBOSITY ERROR \
             -QUIET true
-        python workflow/scripts/plot_gc.py --metrics {output.metrics:q} --plot {output.plot:q}
+        python {workflow.basedir:q}/scripts/plot_gc.py --metrics {output.metrics:q} --plot {output.plot:q}
 
         sync {output:q}
         """
@@ -308,7 +308,7 @@ rule jsd:
             --minMappingQuality 30 \
             --numberOfProcessors {threads:q} \
             --plotFile "$tmp/fingerprint.png"
-        python workflow/scripts/plot_fingerprint.py \
+        python {workflow.basedir:q}/scripts/plot_fingerprint.py \
             --counts "$tmp/counts.tab" \
             --title {wildcards.sample:q} \
             --plot {output.plot:q}

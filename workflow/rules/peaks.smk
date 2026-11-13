@@ -235,7 +235,7 @@ rule plot_idr:
         r"""
         exec &> >(tee {log:q})
 
-        python workflow/scripts/plot_idr.py \
+        python {workflow.basedir:q}/scripts/plot_idr.py \
             --input {input:q} \
             --threshold {params.threshold:q} \
             --title {wildcards.sample:q} \

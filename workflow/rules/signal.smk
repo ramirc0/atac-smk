@@ -83,7 +83,7 @@ rule zscore:
             {input.bigwig:q} \
             {input.anchors:q} \
             - \
-            | python workflow/scripts/zscore.py --output {output:q}
+            | python {workflow.basedir:q}/scripts/zscore.py --output {output:q}
 
         sync {output:q}
         """
