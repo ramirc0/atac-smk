@@ -1,0 +1,33 @@
+package:
+  name: bowtie2
+  version: "2.5.5"
+
+# bowtie2 master, past v2.5.5: the newest master merge older than 7 days.
+source:
+  git: https://github.com/BenLangmead/bowtie2.git
+  rev: 065e16098fdb7878d1692bcc222d0ac85ee4f1c2
+
+build:
+  number: 0
+  # The default target does not build libsais, so make it first. Do not set
+  # LDLIBS or CFLAGS on the make command line. They override the Makefile's
+  # per-target -lsais and libsais's -fopenmp, and bowtie2-build loses SAIS.
+  script:
+    - make libsais USE_SAIS_OPENMP=1 CC="${CC}"
+    - make -j${CPU_COUNT} WITH_ZSTD=1 USE_SAIS_OPENMP=1 CXX="${CXX}" CC="${CC}" CPP="${CXX}"
+    - install -m 0755 bowtie2 bowtie2-align-s bowtie2-align-l bowtie2-align-s-v256 bowtie2-align-l-v256 bowtie2-build bowtie2-build-s bowtie2-build-l bowtie2-inspect bowtie2-inspect-s bowtie2-inspect-l ${PREFIX}/bin/
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+  host:
+    - libgomp
+    - zlib
+    - zstd
+  run:
+    - libgomp
+    - perl
+    - python

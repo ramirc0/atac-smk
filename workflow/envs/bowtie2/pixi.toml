@@ -1,0 +1,6 @@
+[package]
+name = "bowtie2"
+version = "2.5.5"
+
+[package.build]
+backend = { name = "pixi-build-rattler-build", version = "*" }

@@ -118,8 +118,9 @@ Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once u
 ### Differences from ENCODE
 
 - ENCODE's `assign_multimappers.py` drops the last read name of every BAM. This does not.
-- MACS3 3.0.5 replaces MACS2 2.2.4. Peak regions match. Summits differ where
+- MACS3 3.1.0 replaces MACS2 2.2.4. Peak regions match. Summits differ where
   MACS3 fixed summit selection bugs.
+- bowtie2 builds from master past 2.5.5, in `workflow/envs/bowtie2/`. ENCODE runs 2.3.4.3.
 - sambamba marks duplicates, with ENCODE's settings. ENCODE's default is Picard.
 - Fragment length QC reads every record. ENCODE stops after 5M, mostly chr1.
 - One MACS3 call per sample gives peaks and signal. ENCODE runs the same call twice.
