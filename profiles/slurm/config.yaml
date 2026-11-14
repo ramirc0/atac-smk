@@ -48,7 +48,7 @@ set-resources:              # from peak RSS of the ENCODE validation run
     slurm_partition: 12hours
     runtime: 720m
   filter:
-    mem_mb: 64000 * attempt
+    mem_mb: 96000 * attempt   # MOHD libraries peaked at 64.5 GB
   tagalign:
     mem_mb: 32000 * attempt
   pbc_qc:
