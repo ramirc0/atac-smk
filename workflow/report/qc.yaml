@@ -1,0 +1,310 @@
+# The run's QC report: metrics from gather_qc.py, audits from ENCODE's portal.
+# Each audit copies the flag, level and operators of
+# ~/Projects/encode-data-standards/dna-accessibility/atac-seq/portal-audits.md.
+title: ATAC-seq QC
+theme: zed
+standards:
+  name: ENCODE4 ATAC-seq audits
+  url: https://www.encodeproject.org/data-standards/atac-seq/atac-encode4/
+  source: >-
+    encode-data-standards dna-accessibility/atac-seq/portal-audits.md (b88ef92),
+    from ENCODE-DCC/encoded 9bd8ff1, audit/analysis.py:check_analysis_atac_encode4_qc_standards
+
+groups:
+  - name: Reads
+    metrics:
+      - id: read_pairs
+        label: Read pairs
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        description: Read pairs in the FASTQs, from fastp.
+      - id: read_length
+        label: Read length
+        digits: 0
+        description: >-
+          Mean mate 1 length before trimming, from fastp. ENCODE4 asks for at least
+          45 bp. The portal does not audit it.
+      - id: q30_pct
+        label: Q30
+        format: percent
+        digits: 1
+        outlier: low
+        description: Bases at quality 30 or above, from fastp.
+      - id: gc_pct
+        label: GC
+        format: percent
+        digits: 1
+        outlier: both
+        description: GC content of the reads, from fastp.
+      - id: duplication_pct
+        label: Duplication
+        format: percent
+        digits: 1
+        outlier: high
+        scale: log
+        description: fastp's duplication estimate on the raw reads.
+      - id: adapter_pct
+        label: Adapter
+        format: percent
+        digits: 1
+        outlier: high
+        description: Mate 1 reads with an adapter, from cutadapt.
+  - name: Alignment
+    metrics:
+      - id: alignment_pct
+        label: Aligned
+        format: percent
+        digits: 1
+        outlier: low
+        table: true
+        headline: true
+        description: >-
+          Reads with an alignment over all reads in the raw BAM. Each read counts
+          once, as SAMstats counts it.
+      - id: properly_paired_pct
+        label: Proper pairs
+        format: percent
+        digits: 1
+        outlier: low
+        description: Properly paired reads in the raw BAM.
+      - id: frac_mito
+        label: Mito
+        digits: 3
+        outlier: high
+        scale: log
+        table: true
+        description: >-
+          ENCODE's frac_mito, reads on chrM over all mapped reads. ENCODE sets no
+          cutoff.
+      - id: fragments
+        label: Fragments
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        headline: true
+        description: >-
+          Non-duplicate, non-mitochondrial, properly paired fragments in the
+          filtered BAM: the read depth ENCODE audits.
+  - name: Library
+    metrics:
+      - id: nrf
+        label: NRF
+        digits: 3
+        outlier: low
+        table: true
+        headline: true
+        description: Non-redundant fraction of the filtered read pairs.
+      - id: pbc1
+        label: PBC1
+        digits: 3
+        outlier: low
+        table: true
+        description: Locations with exactly one read pair over locations with any.
+      - id: pbc2
+        label: PBC2
+        digits: 1
+        outlier: low
+        table: true
+        description: >-
+          Locations with exactly one read pair over those with exactly two.
+          Infinite when no location has two.
+  - name: Enrichment
+    metrics:
+      - id: tss_enrichment
+        label: TSS
+        digits: 1
+        outlier: low
+        table: true
+        headline: true
+        description: TSS enrichment on ENCODE's GRCh38 TSS set, ENCFF493CCB.
+      - id: frip
+        label: FRiP
+        digits: 3
+        outlier: low
+        table: true
+        headline: true
+        description: >-
+          Fraction of reads in the pseudoreplicated (overlap) peaks, the set the
+          portal audits for unreplicated data.
+      - id: frip_peaks
+        label: FRiP, all peaks
+        digits: 3
+        description: Fraction of reads in the blacklist-filtered MACS3 peaks.
+      - id: frip_idr
+        label: FRiP, IDR peaks
+        digits: 3
+        description: Fraction of reads in the IDR thresholded peaks.
+      - id: frac_dhs
+        label: In DHSs
+        digits: 3
+        outlier: low
+        description: Fraction of reads in ENCODE's universal DHSs.
+      - id: frac_promoter
+        label: In promoters
+        digits: 3
+        description: Fraction of reads in promoters.
+      - id: frac_enhancer
+        label: In enhancers
+        digits: 3
+        description: Fraction of reads in enhancers.
+      - id: frac_blacklist
+        label: In blacklist
+        digits: 4
+        outlier: high
+        scale: log
+        description: Fraction of reads in the ENCODE blacklist.
+      - id: synthetic_jsd
+        label: Synthetic JSD
+        digits: 3
+        outlier: low
+        description: deepTools' Jensen-Shannon distance from a uniform coverage.
+      - id: at_dropout
+        label: AT dropout
+        digits: 1
+        outlier: high
+        description: Picard's AT dropout.
+      - id: gc_dropout
+        label: GC dropout
+        digits: 2
+        description: >-
+          Picard's GC dropout. Most runs sit near 0, so its cohort spread
+          flags nothing useful.
+  - name: Peaks
+    metrics:
+      - id: peaks
+        label: Peaks
+        format: count
+        description: MACS3 peaks after the blacklist filter.
+      - id: overlap_peaks
+        label: Overlap peaks
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        headline: true
+        description: Pseudoreplicated peaks, found in both pseudoreplicates.
+      - id: idr_peaks
+        label: IDR peaks
+        format: count
+        outlier: low
+        scale: log
+        table: true
+        headline: true
+        description: Pseudoreplicated IDR thresholded peaks.
+  - name: Fragments
+    metrics:
+      - id: nfr_peak
+        label: NFR peak
+        format: flag
+        table: true
+        description: A nucleosome-free peak in the fragment lengths.
+      - id: mono_nuc_peak
+        label: Mono-nuc peak
+        format: flag
+        table: true
+        description: A mononucleosome peak in the fragment lengths.
+      - id: di_nuc_peak
+        label: Di-nuc peak
+        format: flag
+        description: A dinucleosome peak in the fragment lengths. Not a standard.
+      - id: frac_nfr
+        label: NFR fraction
+        digits: 3
+        outlier: low
+        description: Reads in the NFR. ATAQC wants 0.4 or more. Not an ENCODE standard.
+      - id: nfr_mono_ratio
+        label: NFR / mono-nuc
+        digits: 2
+        outlier: low
+        description: NFR over mono-nucleosome reads. ATAQC wants 2.5 or more. Not an ENCODE standard.
+
+audits:
+  - flag: acceptable alignment rate
+    level: WARNING
+    when: alignment_pct >= 80 AND alignment_pct <= 95
+    source: analysis.py:1892-1893
+  - flag: low alignment rate
+    level: NOT_COMPLIANT
+    when: alignment_pct < 80
+    source: analysis.py:1894-1895
+  - flag: low read depth
+    level: WARNING
+    when: fragments >= 20000000 AND fragments < 25000000
+    source: analysis.py:1897-1921
+  - flag: insufficient read depth
+    level: NOT_COMPLIANT
+    when: fragments >= 15000000 AND fragments < 20000000
+    source: analysis.py:1922-1923
+  - flag: extremely low read depth
+    level: ERROR
+    when: fragments < 15000000
+    source: analysis.py:1924-1925
+  - flag: no peaks in nucleosome-free regions
+    level: NOT_COMPLIANT
+    when: NOT nfr_peak
+    source: analysis.py:1927-1935
+  - flag: no mononucleosome peak
+    level: NOT_COMPLIANT
+    when: NOT mono_nuc_peak
+    source: >-
+      ENCODE4 page, "must". The portal does not audit it, so it takes the NFR
+      peak's level.
+  - flag: low TSS enrichment (GRCh38)
+    level: NOT_COMPLIANT
+    when: tss_enrichment < 5
+    source: analysis.py:1966-1976
+  - flag: moderate TSS enrichment (GRCh38)
+    level: WARNING
+    when: tss_enrichment >= 5 AND tss_enrichment <= 7
+    source: analysis.py:1977-1978
+  - flag: low FRiP score
+    level: NOT_COMPLIANT
+    when: frip < 0.2
+    source: analysis.py:2062-2063
+  - flag: moderate FRiP score
+    level: WARNING
+    when: frip >= 0.2 AND frip <= 0.3
+    source: >-
+      ENCODE4 page, FRiP > 0.3 "should". The portal's test reads PBC1 instead
+      (analysis.py:2064-2065).
+  - flag: poor library complexity
+    level: NOT_COMPLIANT
+    when: nrf < 0.7
+    source: analysis.py:2000-2001
+  - flag: moderate library complexity
+    level: WARNING
+    when: nrf >= 0.7 AND nrf < 0.9
+    source: analysis.py:2002-2003
+  - flag: severe bottlenecking
+    level: NOT_COMPLIANT
+    when: pbc1 < 0.7
+    source: analysis.py:2020-2021
+  - flag: mild to moderate bottlenecking
+    level: WARNING
+    when: pbc1 >= 0.7 AND pbc1 <= 0.9
+    source: analysis.py:2022-2023
+  - flag: severe bottlenecking
+    level: NOT_COMPLIANT
+    when: pbc2 < 1
+    source: analysis.py:2026-2044
+  - flag: mild to moderate bottlenecking
+    level: WARNING
+    when: pbc2 >= 1 AND pbc2 <= 3
+    source: analysis.py:2045-2046
+  - flag: moderate number of reproducible peaks
+    level: WARNING
+    when: >-
+      overlap_peaks <= 150000 AND idr_peaks <= 70000
+      AND (overlap_peaks >= 100000 OR idr_peaks >= 50000)
+    source: analysis.py:2088-2107, 2128-2147
+  - flag: insufficient number of reproducible peaks
+    level: NOT_COMPLIANT
+    when: overlap_peaks < 100000 AND idr_peaks < 50000
+    source: analysis.py:2088-2107, 2148-2149
+
+links:
+  - label: fastp report
+    path: "{sample}/fastp/{sample}.html"
