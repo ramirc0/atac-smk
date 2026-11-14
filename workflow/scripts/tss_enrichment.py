@@ -16,7 +16,6 @@ import numpy as np
 import poikilos as pk
 import polars as pl
 import pysam
-from zlib_ng import gzip_ng
 
 BINS = 400
 EDGE = 2000
@@ -35,7 +34,6 @@ def build_parser():
     p.add_argument("--bam", required=True, help="Filtered, indexed BAM.")
     p.add_argument("--tss", required=True, help="TSS BED, gzipped or not.")
     p.add_argument("--chromsizes", required=True, help="Contig sizes.")
-    p.add_argument("--fastq", required=True, help="Trimmed R1 FASTQ, for read length.")
     p.add_argument("--qc", required=True, help="tss_enrich.qc to write.")
     p.add_argument(
         "--profile", required=True, help="TSV of the profile: distance, enrichment."
@@ -46,25 +44,29 @@ def build_parser():
     return p
 
 
-def read_length(fastq):
+def read_length(bam):
     """Return the longest of the first million reads, ENCODE's read length.
+
+    ENCODE reads the trimmed R1 FASTQ. The filtered BAM holds the same trimmed
+    reads, and any untrimmed one sets the maximum, so the length is the same.
+    The trimmed FASTQs are temporary, and rereading them would rerun the
+    whole pipeline.
 
     Parameters
     ----------
-    fastq : str
-        Gzipped FASTQ.
+    bam : str
+        Filtered BAM.
 
     Returns
     -------
     int
-        Longest sequence among the first million reads.
+        Longest read among the first million records.
     """
     longest = 0
-    with gzip_ng.open(fastq, "rt") as f:
-        for i, line in enumerate(f):
-            if i % 4 == 1:
-                longest = max(longest, len(line.strip()))
-            if i == 4_000_000:
+    with pysam.AlignmentFile(bam) as f:
+        for i, read in enumerate(f.fetch(until_eof=True)):
+            longest = max(longest, read.query_length)
+            if i == 999_999:
                 break
     return longest
 
@@ -206,7 +208,7 @@ def main(argv=None):
     chromsizes = dict(
         pl.read_csv(args.chromsizes, separator="\t", has_header=False).iter_rows()
     )
-    matrix = tss_matrix(args.bam, tss, chromsizes, read_length(args.fastq))
+    matrix = tss_matrix(args.bam, tss, chromsizes, read_length(args.bam))
     profile, score = enrichment(matrix)
     with open(args.qc, "w") as f:
         f.write(f"{score}")

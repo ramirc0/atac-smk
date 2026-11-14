@@ -73,7 +73,6 @@ rule tss_enrichment:
         bai=f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam.bai",
         tss=TSS_REFERENCE,
         chromsizes=f"{REFDIR}/bowtie2_build/reference.chromsizes",
-        r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
     output:
         qc=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.tss_enrich.qc",
         profile=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.tss_profile.tsv",
@@ -93,7 +92,6 @@ rule tss_enrichment:
             --bam {input.bam:q} \
             --tss {input.tss:q} \
             --chromsizes {input.chromsizes:q} \
-            --fastq {input.r1:q} \
             --qc {output.qc:q} \
             --profile {output.profile:q} \
             --plot {output.plot:q}

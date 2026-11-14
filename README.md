@@ -142,6 +142,9 @@ The run's report goes to `results/<run_id>/report/`: `qc_metrics.tsv`,
 - bowtie2 builds from master past 2.5.5, in `workflow/envs/bowtie2/`. ENCODE runs 2.3.4.3.
 - sambamba marks duplicates, with ENCODE's settings. ENCODE's default is Picard.
 - Fragment length QC reads every record. ENCODE stops after 5M, mostly chr1.
+- TSS enrichment takes the read length from the first million records of the
+  filtered BAM. ENCODE reads the trimmed R1 FASTQ. Both give the longest read,
+  and the trimmed FASTQs can stay temporary.
 - One MACS3 call per sample gives peaks and signal. ENCODE runs the same call twice.
 - There is no replicate pooling or true-replicate IDR. Each sample is one replicate.
 - Anchor z-scores use bigtools' unrounded means. The ENCODE4 cCRE pipeline's UCSC
