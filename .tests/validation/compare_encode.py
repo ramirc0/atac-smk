@@ -3,13 +3,12 @@
 ENCODE ran older tools (MACS2 2.2.4, bowtie2 2.3.4.3, Picard) and stopped its
 fragment length QC after 5M records, so values are close, not equal. The
 integration tests compare step by step on identical inputs. Run from the
-repository root after the validation run:
+repository root after the validation run, which writes its QC table:
 
     pixi run --manifest-path workflow/envs/pixi.toml python .tests/validation/compare_encode.py
 """
 
 import argparse
-import json
 import subprocess
 from pathlib import Path
 
@@ -17,6 +16,19 @@ import polars as pl
 from zlib_ng import gzip_ng
 
 ENCODE_DATA = Path("/data/projects/encode/data")
+# The metrics of encode_qc.tsv, as qc_metrics.tsv names them after the rename.
+COMPARED = [
+    "nrf",
+    "pbc1",
+    "pbc2",
+    "frac_mito",
+    "frac_nfr",
+    "nfr_mono_ratio",
+    "frip_overlap",
+    "frip_idr",
+    "overlap_peaks",
+    "idr_peaks",
+]
 
 
 def build_parser():
@@ -33,22 +45,6 @@ def build_parser():
         "--encode", default=".tests/validation/encode_qc.tsv", help="ENCODE QC."
     )
     return p
-
-
-def table(path):
-    """Read a ``name<TAB>value...`` QC file into a dict of its first values.
-
-    Parameters
-    ----------
-    path : pathlib.Path
-        QC file.
-
-    Returns
-    -------
-    dict of str to str
-        First field after the name, per line.
-    """
-    return dict(line.split("\t")[:2] for line in path.read_text().splitlines())
 
 
 def peaks_hit(a, b):
@@ -91,43 +87,25 @@ def peak_count(path):
         return sum(1 for _ in f)
 
 
-def ours(run, sample):
-    """Collect one sample's QC from the run, keyed like ``encode_qc.tsv``.
+def ours(run):
+    """Read the run's QC table, keyed like ``encode_qc.tsv``.
 
     Parameters
     ----------
     run : pathlib.Path
-        Run directory.
-    sample : str
-        Sample ID.
+        Run directory. Its ``gather_qc`` rule wrote ``report/qc_metrics.tsv``.
 
     Returns
     -------
-    dict of str to float
-        QC values.
+    dict of str to dict
+        Per sample ID, the metrics ``encode_qc.tsv`` holds.
     """
-    d = run / sample
-    pbc = json.loads((d / f"pbc_qc/{sample}.pbc.json").read_text())
-    # Ratio rows: metric, pass flag, value, message.
-    rows = (d / f"frag_len/{sample}.nucleosomal.qc").read_text().splitlines()
-    nucleosomal = {r[0]: r[2] for r in (x.split("\t") for x in rows) if len(r) == 4}
-    frip = pl.read_csv(d / f"frip/{sample}.tsv", separator="\t")
-    frip = dict(zip(frip["peak_set"], frip["reads_in_peaks"] / frip["reads"]))
+    metrics = pl.read_csv(run / "report/qc_metrics.tsv", separator="\t").rename(
+        {"frip": "frip_overlap"}
+    )
     return {
-        "nrf": pbc["NRF"],
-        "pbc1": pbc["PBC1"],
-        "pbc2": pbc["PBC2"],
-        "frac_mito": float(
-            table(d / f"frac_mito/{sample}.frac_mito.qc")["frac_mito_reads"]
-        ),
-        "frac_nfr": float(nucleosomal["Fraction of reads in NFR"]),
-        "nfr_mono_ratio": float(nucleosomal["NFR / mono-nuc reads"]),
-        "frip_overlap": frip["overlap"],
-        "frip_idr": frip["idr"],
-        "overlap_peaks": peak_count(
-            d / f"overlap/{sample}.overlap.bfilt.narrowPeak.gz"
-        ),
-        "idr_peaks": peak_count(d / f"idr/{sample}.idr.bfilt.narrowPeak.gz"),
+        row["sample_id"]: {metric: row[metric] for metric in COMPARED}
+        for row in metrics.iter_rows(named=True)
     }
 
 
@@ -142,9 +120,10 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     run = Path(args.run)
     encode = pl.read_csv(args.encode, separator="\t", comment_prefix="#")
+    measured = ours(run)
     for row in encode.iter_rows(named=True):
         sample = row["sample_id"]
-        mine = ours(run, sample)
+        mine = measured[sample]
         print(f"\n{sample}\n{'metric':<16}{'ours':>12}{'ENCODE':>12}")
         for metric, value in mine.items():
             print(f"{metric:<16}{value:>12.4g}{row[metric]:>12.4g}")
