@@ -19,8 +19,9 @@ slurm-efficiency-threshold: 0.8
 slurm-init-seconds-before-status-checks: 10
 # NODE_FAIL nodes join this list. An --exclude in slurm_extra would override it.
 # z1076 cannot read /data. z1056 and z1081 lost their /data mount on 2026-11-05.
-# z1072 could not see the MOHD FASTQs on 2026-11-13.
-slurm-exclude-failed-nodes: z1024,z1056,z1072,z1076,z1081
+# z1072 could not see the MOHD FASTQs on 2026-11-13. z1018 stopped responding on
+# 2026-11-14. Jobs on z1027 and z1028 ran 5-10x slower that day, starved for I/O.
+slurm-exclude-failed-nodes: z1018,z1024,z1027,z1028,z1056,z1072,z1076,z1081
 
 default-resources:
   slurm_partition: 4hours,12hours   # z1022-1029 are only in 12hours
