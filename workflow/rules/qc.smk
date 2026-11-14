@@ -33,6 +33,7 @@ rule frag_len:
         f"{OUTDIR}/{{sample}}/filter/{{sample}}.bam",
     output:
         qc=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.nucleosomal.qc",
+        histogram=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.insert_size.txt",
         plot=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.svg",
         plot_png=f"{OUTDIR}/{{sample}}/frag_len/{{sample}}.png",
     params:
@@ -52,13 +53,13 @@ rule frag_len:
 
         picard -Xmx4g CollectInsertSizeMetrics \
             -I {input:q} \
-            -O "$tmp/hist.txt" \
+            -O {output.histogram:q} \
             -H "$tmp/hist.pdf" \
             -W 1000 \
             -VERBOSITY ERROR \
             -QUIET true
         python {workflow.basedir:q}/scripts/fraglen_qc.py \
-            --histogram "$tmp/hist.txt" \
+            --histogram {output.histogram:q} \
             --qc {output.qc:q} \
             --plot {output.plot:q}
 
@@ -75,6 +76,7 @@ rule tss_enrichment:
         r1=f"{OUTDIR}/{{sample}}/trim/{{sample}}_R1.fastq.gz",
     output:
         qc=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.tss_enrich.qc",
+        profile=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.tss_profile.tsv",
         plot=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.svg",
         plot_png=f"{OUTDIR}/{{sample}}/tss_enrichment/{{sample}}.png",
     log:
@@ -93,6 +95,7 @@ rule tss_enrichment:
             --chromsizes {input.chromsizes:q} \
             --fastq {input.r1:q} \
             --qc {output.qc:q} \
+            --profile {output.profile:q} \
             --plot {output.plot:q}
 
         sync {output:q}
@@ -281,6 +284,7 @@ rule jsd:
         blacklist=BLACKLIST,
     output:
         qc=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.jsd.qc",
+        curve=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.fingerprint.tsv",
         plot=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.svg",
         plot_png=f"{OUTDIR}/{{sample}}/jsd/{{sample}}.png",
     params:
@@ -311,6 +315,7 @@ rule jsd:
         python {workflow.basedir:q}/scripts/plot_fingerprint.py \
             --counts "$tmp/counts.tab" \
             --title {wildcards.sample:q} \
+            --curve {output.curve:q} \
             --plot {output.plot:q}
 
         sync {output:q}

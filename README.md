@@ -107,13 +107,13 @@ Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once u
 | `signal/` | Fold-change, p-value and pileup bigWigs |
 | `zscore/` | Per-anchor fold-change z-score, mean signal and rank, as parquet |
 | `pbc_qc/` | NRF, PBC1 and PBC2 JSON |
-| `frag_len/` | ENCODE's `nucleosomal.qc`, distribution plot |
-| `tss_enrichment/` | ENCODE's `tss_enrich.qc`, profile plot |
+| `frag_len/` | ENCODE's `nucleosomal.qc`, Picard's insert size histogram, distribution plot |
+| `tss_enrichment/` | ENCODE's `tss_enrich.qc`, the profile as TSV, profile plot |
 | `frip/` | FRiP per peak set |
 | `frac_mito/` | Mitochondrial read fraction |
 | `annot_enrich/` | Read fractions per annotation |
 | `gc_bias/` | Picard GC metrics, plot |
-| `jsd/` | deeptools fingerprint metrics, plot |
+| `jsd/` | deeptools fingerprint metrics, the fingerprint curve as TSV, plot |
 
 ### Differences from ENCODE
 

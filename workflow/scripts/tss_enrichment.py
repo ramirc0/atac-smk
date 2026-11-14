@@ -38,6 +38,9 @@ def build_parser():
     p.add_argument("--fastq", required=True, help="Trimmed R1 FASTQ, for read length.")
     p.add_argument("--qc", required=True, help="tss_enrich.qc to write.")
     p.add_argument(
+        "--profile", required=True, help="TSV of the profile: distance, enrichment."
+    )
+    p.add_argument(
         "--plot", required=True, help="Profile SVG to write (PNG beside it)."
     )
     return p
@@ -186,7 +189,7 @@ def plot_profile(profile, score, output_file):
 
 
 def main(argv=None):
-    """Write the TSS enrichment score and the profile plot.
+    """Write the TSS enrichment score, the profile and its plot.
 
     Parameters
     ----------
@@ -207,6 +210,9 @@ def main(argv=None):
     profile, score = enrichment(matrix)
     with open(args.qc, "w") as f:
         f.write(f"{score}")
+    pl.DataFrame(
+        {"distance": np.linspace(-EDGE, EDGE, BINS), "enrichment": profile}
+    ).write_csv(args.profile, separator="\t")
     plot_profile(profile, score, args.plot)
 
 
