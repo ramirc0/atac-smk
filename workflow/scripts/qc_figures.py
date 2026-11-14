@@ -1,16 +1,20 @@
-"""Write each sample's report figures, interactive where the data are kept."""
+"""Write each sample's report figures, from the data each QC step keeps."""
 
 import argparse
-import os
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from pathlib import Path
 
+import polars as pl
+from fragment_ranges import MONO_LOWER, MONO_UPPER, NFR_UPPER
 from qc_report import (
+    fingerprint_figure,
     gc_bias_figure,
     idr_signal_figure,
+    insert_size_figure,
     read_picard_metrics,
     read_quality_figure,
+    tss_profile_figure,
     write_sample_panels,
 )
 
@@ -32,35 +36,9 @@ def build_parser():
     return p
 
 
-def png_href(run, sample, step, report_dir):
-    """Link a step's PNG for one sample from the report's directory.
-
-    Parameters
-    ----------
-    run : pathlib.Path
-        Run directory.
-    sample : str
-        Sample ID.
-    step : str
-        Step directory, such as ``tss_enrichment``.
-    report_dir : pathlib.Path
-        Directory of the report HTML.
-
-    Returns
-    -------
-    str
-        Relative path with forward slashes.
-    """
-    png = run / sample / step / f"{sample}.png"
-    return Path(os.path.relpath(png, report_dir)).as_posix()
-
-
 def write_panels(sample, run, report_dir, idr_threshold):
     """Write one sample's ``samples/<sample>.js``.
 
-    The TSS profile, fragment lengths and fingerprint are not kept as data,
-    so their panels show the pipeline's PNG.
-
     Parameters
     ----------
     sample : str
@@ -68,23 +46,44 @@ def write_panels(sample, run, report_dir, idr_threshold):
     run : pathlib.Path
         Run directory.
     report_dir : pathlib.Path
-        Directory of the report HTML. Image paths are relative to it.
+        Directory of the report HTML.
     idr_threshold : float
         IDR threshold, for the IDR panel's legend.
     """
     d = run / sample
+    histogram = read_picard_metrics(
+        d / f"frag_len/{sample}.insert_size.txt", histogram=True
+    )
     write_sample_panels(
         report_dir / "samples" / f"{sample}.js",
         sample,
         [
             ("Read quality", read_quality_figure(d / f"fastp/{sample}.json")),
-            ("TSS enrichment", png_href(run, sample, "tss_enrichment", report_dir)),
-            ("Fragment lengths", png_href(run, sample, "frag_len", report_dir)),
+            (
+                "TSS enrichment",
+                tss_profile_figure(
+                    pl.read_csv(
+                        d / f"tss_enrichment/{sample}.tss_profile.tsv", separator="\t"
+                    )
+                ),
+            ),
+            (
+                "Fragment lengths",
+                insert_size_figure(
+                    histogram,
+                    bands=[("NFR", 0, NFR_UPPER), ("Mono-nuc", MONO_LOWER, MONO_UPPER)],
+                ),
+            ),
             (
                 "GC bias",
                 gc_bias_figure(read_picard_metrics(d / f"gc_bias/{sample}.gc.txt")),
             ),
-            ("Fingerprint", png_href(run, sample, "jsd", report_dir)),
+            (
+                "Fingerprint",
+                fingerprint_figure(
+                    pl.read_csv(d / f"jsd/{sample}.fingerprint.tsv", separator="\t")
+                ),
+            ),
             (
                 "IDR",
                 idr_signal_figure(d / f"idr/{sample}.idr.txt.gz", idr_threshold),

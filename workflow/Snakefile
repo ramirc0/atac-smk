@@ -8,6 +8,7 @@ include: "rules/preprocess.smk"
 include: "rules/signal.smk"
 include: "rules/peaks.smk"
 include: "rules/qc.smk"
+include: "rules/report.smk"
 
 
 # The Slack webhook URL may come from a .env file in the working directory.
@@ -34,6 +35,7 @@ def notify_slack(text):
 # Snakemake keeps only the last onstart, so the Slack start message goes here too.
 onstart:
     shell("pixi install --manifest-path {workflow.basedir:q}/envs/pixi.toml --all --locked")
+    shell("pixi install --manifest-path {workflow.basedir:q}/envs/report/pixi.toml --locked")
     if SLACK_WEBHOOK_URL:
         notify_slack("Snakemake Started 🚀")
 
@@ -73,3 +75,4 @@ rule all:
             ],
             sample=SAMPLES,
         ),
+        f"{OUTDIR}/report/qc_report.html",

@@ -5,12 +5,9 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import poikilos as pk
+from fragment_ranges import MONO_LOWER, MONO_UPPER, NFR_UPPER
 from scipy.signal import find_peaks_cwt
 
-# ENCODE's ranges in bp: NFR below 150, mono-nucleosome above 150 up to 300.
-NFR_UPPER = 150
-MONO_LOWER = 150
-MONO_UPPER = 300
 PEAK_RANGES = [
     ("Presence of NFR peak", 20, 90),
     ("Presence of Mono-Nuc peak", 120, 250),

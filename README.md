@@ -10,7 +10,8 @@ ATAC-seq. It reproduces the single-replicate flow of the
 v2.2.3, step by step. Reads are trimmed and aligned. The filtered alignments
 feed signal tracks, peak calls, IDR and naive overlap on pseudoreplicates, and
 ENCODE's library and enrichment QC. Fold change is z-scored over the ENCODE
-cCRE anchors, as the ENCODE4 cCRE pipeline does.
+cCRE anchors, as the ENCODE4 cCRE pipeline does. Each run ends with one HTML QC
+report that grades every sample on ENCODE's ATAC-seq audits.
 
 ### Layout
 
@@ -27,8 +28,11 @@ workflow/
     peaks.smk            pseudoreplicates, MACS3 peaks, blacklist filter, IDR, overlap
     signal.smk           fold-change, p-value and pileup bigWigs, anchor z-scores
     qc.smk               PBC/NRF, fragment lengths, TSS, FRiP, mito, annotation, GC, JSD
+    report.smk           the run's QC table, figures and report
   scripts/               argparse scripts, each with build_parser() + main()
+  report/qc.yaml         the report's metrics, ENCODE audits and links
   envs/pixi.toml         rule envs (pixi workspace): default, idr and test
+  envs/report/           the report's own pixi workspace
 .tests/
   integration/           chr21 fixture run, step by step against ENCODE's task scripts
   validation/            four ENCODE replicates on GRCh38, compared with ENCODE's QC
@@ -86,12 +90,27 @@ QC, in `qc.smk`:
 - `annot_enrich` counts reads in DHS, promoter, enhancer and blacklist regions.
 - `gc_bias` runs Picard CollectGcBiasMetrics. `jsd` runs deeptools plotFingerprint.
 
+Report, in `report.smk`, with [qc-report](https://github.com/ramirc0/qc-report):
+
+- `gather_qc` reads every sample's QC files into one table, a row per sample.
+- `qc_figures` draws each sample's interactive figures from the data the QC
+  steps keep: read quality, TSS profile, fragment lengths, GC bias,
+  fingerprint and IDR.
+- `qc_report` renders the page. `workflow/report/qc.yaml` copies the flags,
+  levels and cutoffs of ENCODE's ATAC-seq portal audits from
+  [encode-data-standards](https://github.com/ramirc0/encode-data-standards).
+  Each sample takes its highest fired level, as on the portal. Samples far
+  from the run's median are marked as cohort outliers.
+
 ### Outputs
 
 Each sample writes to `results/<run_id>/<sample>/<step>/`. The indexes and
 chromosome sizes do not depend on the run. They go to `results/refs/`. Logs and
 benchmarks mirror the run layout under `logs/<run_id>/` and `benchmarks/<run_id>/`.
 Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once used.
+The run's report goes to `results/<run_id>/report/`: `qc_metrics.tsv`,
+`qc_report.html`, and `samples/`, which holds each sample's figures. Keep
+`samples/` beside the HTML.
 
 | Step directory | Key outputs |
 |---|---|
@@ -128,6 +147,11 @@ Trimmed reads, bedGraphs and unfiltered IDR and overlap peaks are deleted once u
 - Anchor z-scores use bigtools' unrounded means. The ENCODE4 cCRE pipeline's UCSC
   tool rounds them to six significant digits. Z-scores agree to 1e-5, and anchors
   tied in its ranks may split.
+- ENCODE writes a `qc.html` and `qc.json` per experiment. This pipeline writes one
+  report per run, graded on the portal's ATAC-seq audits. The moderate FRiP
+  warning uses the standards page's 0.3, because the portal's test reads PBC1 by
+  mistake. A missing mononucleosome peak is NOT_COMPLIANT. The page requires the
+  peak and the portal does not audit it.
 
 ### Conventions
 
@@ -158,8 +182,8 @@ and [Snakemake's best practices](https://snakemake.readthedocs.io/en/stable/snak
 
 - Linux x86-64, the only platform in both pixi workspaces.
 - [pixi](https://pixi.sh) on `PATH`.
-- Network access to GitHub. Snakemake, its pixi and SLURM plugins, and
-  poikilos install from git.
+- Network access to GitHub. Snakemake, its pixi and SLURM plugins, poikilos and
+  qc-report install from git.
 - A SLURM cluster for `profiles/slurm`.
 - ENCODE's GRCh38 references. See Inputs.
 
@@ -186,7 +210,8 @@ Add a dependency with `pixi add <pkg>` in `workflow/envs/`. After a hand edit,
 run `pixi lock` there (rules use `locked=True`). `pixi update` moves the lock to
 the newest versions the manifest allows. Any change to the manifest or lock
 reruns every rule. So does moving the workdir, because the env hash includes the
-workspace's absolute path.
+workspace's absolute path. The report's rules use a third workspace,
+`workflow/envs/report/`, so a qc-report update reruns only the report.
 
 ### Inputs
 

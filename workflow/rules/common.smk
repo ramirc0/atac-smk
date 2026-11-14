@@ -47,6 +47,9 @@ BOWTIE2_INDEX_FILES = multiext(
 SOFTWARE_ENV = pixi(workspace="../envs", env=config["pixi_env"], locked=True)
 IDR_ENV = pixi(workspace="../envs", env="idr", locked=True)
 
+# Its own workspace: any change to ../envs/pixi.toml would rerun every rule.
+REPORT_ENV = pixi(workspace="../envs/report", env="default", locked=True)
+
 # samtools sort -T and IDR write here, so it must exist before any job runs.
 Path(TMP_DIR).mkdir(parents=True, exist_ok=True)
 
