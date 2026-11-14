@@ -61,6 +61,8 @@ keep-going: true
 show-failed-logs: true
 benchmark-extended: true
 retries: 1
-slurm-requeue: false
+# The cluster requeues NODE_FAIL jobs (JobRequeue=1). With false, Snakemake also
+# retries them, and two copies write the same outputs.
+slurm-requeue: true
 printshellcmds: true
 latency-wait: 60
