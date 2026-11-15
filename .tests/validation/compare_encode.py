@@ -1,9 +1,11 @@
-"""Print the validation run's QC beside ENCODE's published values.
+"""Print the validation run's QC beside a baseline run's and ENCODE's.
 
 ENCODE ran older tools (MACS2 2.2.4, bowtie2 2.3.4.3, Picard) and stopped its
 fragment length QC after 5M records, so values are close, not equal. The
-integration tests compare step by step on identical inputs. Run from the
-repository root after the validation run, which writes its QC table:
+baseline shows what a change moved. Rows whose value differs from the baseline,
+even below the printed precision, end in ``changed``. The integration tests
+compare step by step on identical inputs. Run from the repository root after
+the validation run, which writes its QC table:
 
     pixi run --manifest-path workflow/envs/pixi.toml python .tests/validation/compare_encode.py
 """
@@ -43,6 +45,11 @@ def build_parser():
     p.add_argument("--run", default="results/encode-validation", help="Run directory.")
     p.add_argument(
         "--encode", default=".tests/validation/encode_qc.tsv", help="ENCODE QC."
+    )
+    p.add_argument(
+        "--baseline",
+        default=".tests/validation/baseline_qc.tsv",
+        help="QC table of the last accepted validation run.",
     )
     return p
 
@@ -87,22 +94,20 @@ def peak_count(path):
         return sum(1 for _ in f)
 
 
-def ours(run):
-    """Read the run's QC table, keyed like ``encode_qc.tsv``.
+def qc_metrics(path):
+    """Read a run's QC table, keyed like ``encode_qc.tsv``.
 
     Parameters
     ----------
-    run : pathlib.Path
-        Run directory. Its ``gather_qc`` rule wrote ``report/qc_metrics.tsv``.
+    path : pathlib.Path
+        A ``qc_metrics.tsv`` written by the ``gather_qc`` rule.
 
     Returns
     -------
     dict of str to dict
         Per sample ID, the metrics ``encode_qc.tsv`` holds.
     """
-    metrics = pl.read_csv(run / "report/qc_metrics.tsv", separator="\t").rename(
-        {"frip": "frip_overlap"}
-    )
+    metrics = pl.read_csv(path, separator="\t").rename({"frip": "frip_overlap"})
     return {
         row["sample_id"]: {metric: row[metric] for metric in COMPARED}
         for row in metrics.iter_rows(named=True)
@@ -110,7 +115,9 @@ def ours(run):
 
 
 def main(argv=None):
-    """Print each metric per sample, ours beside ENCODE's, then peak agreement.
+    """Print each metric per sample beside the baseline's and ENCODE's.
+
+    Peak agreement with ENCODE follows each sample's table.
 
     Parameters
     ----------
@@ -120,13 +127,17 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     run = Path(args.run)
     encode = pl.read_csv(args.encode, separator="\t", comment_prefix="#")
-    measured = ours(run)
+    measured = qc_metrics(run / "report/qc_metrics.tsv")
+    baseline = qc_metrics(Path(args.baseline))
     for row in encode.iter_rows(named=True):
         sample = row["sample_id"]
-        mine = measured[sample]
-        print(f"\n{sample}\n{'metric':<16}{'ours':>12}{'ENCODE':>12}")
-        for metric, value in mine.items():
-            print(f"{metric:<16}{value:>12.4g}{row[metric]:>12.4g}")
+        print(f"\n{sample}\n{'metric':<16}{'ours':>12}{'baseline':>12}{'ENCODE':>12}")
+        for metric, value in measured[sample].items():
+            before = baseline[sample][metric]
+            changed = "" if value == before else "  changed"
+            print(
+                f"{metric:<16}{value:>12.4g}{before:>12.4g}{row[metric]:>12.4g}{changed}"
+            )
         for peak_set in ("overlap", "idr"):
             path = run / f"{sample}/{peak_set}/{sample}.{peak_set}.bfilt.narrowPeak.gz"
             theirs = ENCODE_DATA / row[f"{peak_set}_file"]

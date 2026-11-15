@@ -303,12 +303,15 @@ pixi run test
 ```
 
 The validation runs four ENCODE replicates on full GRCh38, then prints
-their QC beside ENCODE's published values:
+their QC beside a baseline run's and ENCODE's published values:
 
 ```bash
 snakemake --profile profiles/slurm --configfile .tests/validation/config.yaml
 pixi run --manifest-path workflow/envs/pixi.toml python .tests/validation/compare_encode.py
 ```
+
+The baseline is `.tests/validation/baseline_qc.tsv`. Once you accept a change's
+QC, copy `results/encode-validation/report/qc_metrics.tsv` over it.
 
 ## Help
 
