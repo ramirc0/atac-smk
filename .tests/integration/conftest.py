@@ -17,7 +17,7 @@ ENCODE_RUNS = ROOT / "results-fixture/encode"
 SIF = Path(
     os.environ.get(
         "ENCODE_SIF",
-        "/data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif",
+        "/data/zusers/ramirezc/atac-smk/resources/containers/atac-seq-pipeline_v2.2.3.sif",
     )
 )
 CCRE_TOOLKIT = Path.home() / "Git_Repos/ENCODE-cCREs/Version-4/cCRE-Pipeline/Toolkit"

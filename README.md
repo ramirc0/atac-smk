@@ -296,7 +296,7 @@ once:
 
 ```bash
 pixi run --manifest-path workflow/envs/pixi.toml -e test bash .tests/integration/make_fixture.sh
-apptainer pull /data/zusers/ramirezc/atac-smk-refs/containers/atac-seq-pipeline_v2.2.3.sif \
+apptainer pull /data/zusers/ramirezc/atac-smk/resources/containers/atac-seq-pipeline_v2.2.3.sif \
     docker://encodedcc/atac-seq-pipeline:v2.2.3   # or set ENCODE_SIF
 git clone https://github.com/weng-lab/ENCODE-cCREs ~/Git_Repos/ENCODE-cCREs
 pixi run test
