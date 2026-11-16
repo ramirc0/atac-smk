@@ -329,6 +329,10 @@ If you have any questions or would like to provide constructive feedback, please
 
 Christian Ramirez ([@ramirc0](https://github.com/ramirc0))
 
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
 ## Acknowledgments
 
 Buenrostro, Jason D., Paul G. Giresi, Lisa C. Zaba, Howard Y. Chang, and William J. Greenleaf. 2013. “Transposition of Native Chromatin for Fast and Sensitive Epigenomic Profiling of Open Chromatin, DNA-Binding Proteins and Nucleosome Position.” Nature Methods 10 (12): 1213–18. https://doi.org/10.1038/nmeth.2688.
