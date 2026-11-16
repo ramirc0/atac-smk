@@ -265,7 +265,7 @@ and `samples` in the config to match.
 pixi shell                                                  # launcher env
 snakemake -n -p --profile profiles/local --configfile config/<run_id>/config.yaml  # dry run
 snakemake --profile profiles/local --configfile config/<run_id>/config.yaml        # local
-snakemake --profile profiles/slurm --configfile config/<run_id>/config.yaml        # SLURM
+pixi run slurm <run_id>                                                            # SLURM
 ```
 
 Snakemake MUST run from the repository root. The SLURM profile holds Weng Lab
